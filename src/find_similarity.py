@@ -26,7 +26,7 @@ def find_most_similar_ensemble(input_text, df, top_n=5, models=None):
             config = yaml.safe_load(f)
         models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
 
-    input_embeddings = {name: model.encode(input_text) for name, model in models.items()}
+    input_embeddings = {name: model.encode(f"query: {input_text}") for name, model in models.items()}
 
     # Compute similarity for each model
     for model_name in models.keys():
@@ -40,4 +40,4 @@ def find_most_similar_ensemble(input_text, df, top_n=5, models=None):
     # Sort by ensemble similarity
     top_matches = df.sort_values(by="similarity_ensemble", ascending=False).head(top_n)
 
-    return top_matches  # [["dante", "singleton", "musa", "kirkpatrick", "durling", "similarity_ensemble"]]
+    return top_matches["dante"]  # [["dante", "singleton", "musa", "kirkpatrick", "durling", "similarity_ensemble"]]
