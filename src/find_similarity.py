@@ -4,20 +4,26 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-def find_most_similar_ensemble(input_text, df, top_n=5, models=None):
+import yaml
+import numpy as np
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+def find_most_similar_ensemble(input_text, df, models=None):
     """
-    Computes similarity scores using an ensemble of models.
+    Finds the most similar verse in the 'dante' column based on the highest similarity score
+    across all individual model similarities and the ensemble similarity score.
 
     Parameters:
     input_text (str): The user-provided query.
     df (pd.DataFrame): The DataFrame with stored embeddings.
-    top_n (int): Number of top matches to return.
     models (dict, optional): A dictionary of models to use for embeddings.
-                                 If not provided, the default models from the config will be used.
-                                 Format: {"model_name": SentenceTransformer(model_path), ...}
+                             If not provided, the default models from the config will be used.
+                             Format: {"model_name": SentenceTransformer(model_path), ...}
 
     Returns:
-    pd.DataFrame: Top N most similar verses with similarity scores.
+    str: The most similar verse from the 'dante' column.
     """
 
     # Load default models from config if none are provided
@@ -26,18 +32,24 @@ def find_most_similar_ensemble(input_text, df, top_n=5, models=None):
             config = yaml.safe_load(f)
         models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
 
+    # Compute query embeddings with "query:" prefix
     input_embeddings = {name: model.encode(f"query: {input_text}") for name, model in models.items()}
 
     # Compute similarity for each model
+    similarity_columns = []
     for model_name in models.keys():
-        df[f"similarity_{model_name}"] = cosine_similarity(
+        column_name = f"similarity_{model_name}"
+        df[column_name] = cosine_similarity(
             [input_embeddings[model_name]], np.vstack(df[f"embedding_{model_name}"])
         )[0]
+        similarity_columns.append(column_name)
 
     # Compute final ensemble similarity (average of all models)
-    df["similarity_ensemble"] = df[[f"similarity_{name}" for name in models.keys()]].mean(axis=1)
+    df["similarity_ensemble"] = df[similarity_columns].mean(axis=1)
+    similarity_columns.append("similarity_ensemble")  # Add ensemble score to comparison
 
-    # Sort by ensemble similarity
-    top_matches = df.sort_values(by="similarity_ensemble", ascending=False).head(top_n)
+    # Find the row with the highest value across all similarity columns
+    best_match_idx = df[similarity_columns].values.argmax()  # Get the highest similarity index
+    most_similar_verse = df.iloc[best_match_idx]["dante"]
 
-    return top_matches["dante"]  # [["dante", "singleton", "musa", "kirkpatrick", "durling", "similarity_ensemble"]]
+    return most_similar_verse
