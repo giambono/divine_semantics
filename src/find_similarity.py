@@ -36,7 +36,8 @@ def find_most_similar_ensemble(input_text, df, models=None):
     input_embeddings = {name: model.encode(f"query: {input_text}") for name, model in models.items()}
 
     # Ensure embeddings are NumPy arrays
-    for col in ["embedding_multilingual_e5", "embedding_minilm", "embedding_contriever"]:
+    # for col in ["embedding_multilingual_e5", "embedding_minilm", "embedding_contriever"]:
+    for col in ["embedding_multilingual_e5", "embedding_minilm"]:
         df[col] = df[col].apply(lambda x: np.array(x) if isinstance(x, list) else x)
 
     # Compute similarity for each model
