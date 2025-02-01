@@ -36,8 +36,7 @@ def find_most_similar_ensemble(input_text, df, models=None):
     input_embeddings = {name: model.encode(f"query: {input_text}") for name, model in models.items()}
 
     # Ensure embeddings are NumPy arrays
-    # for col in ["embedding_multilingual_e5", "embedding_minilm", "embedding_contriever"]:
-    for col in ["embedding_multilingual_e5", "embedding_minilm"]:
+    for col in ["embedding_multilingual_e5", "embedding_minilm", "embedding_contriever"]:
         df[col] = df[col].apply(lambda x: np.array(x) if isinstance(x, list) else x)
 
     # Compute similarity for each model
@@ -57,4 +56,14 @@ def find_most_similar_ensemble(input_text, df, models=None):
     best_match_idx = df[similarity_columns].max(axis=1).idxmax()  # Get the highest similarity index
     most_similar_verse = df.iloc[best_match_idx]["dante"]
 
-    return most_similar_verse
+    # Determine which similarity column achieved the highest score for this row
+    best_similarity_series = df.loc[best_match_idx, similarity_columns]
+    best_similarity_column = best_similarity_series.idxmax()
+    # Remove the prefix to get the model name; if ensemble wins, return 'ensemble'
+    if best_similarity_column == "similarity_ensemble":
+        best_model = "ensemble"
+    else:
+        best_model = best_similarity_column.replace("similarity_", "")
+
+    return most_similar_verse, best_model
+
