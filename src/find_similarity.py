@@ -64,7 +64,8 @@ def find_most_similar_ensemble_old(input_text, df, models=None):
     return most_similar_verse, best_model
 
 
-def find_most_similar_ensemble(input_text, df, models={"multilingual_e5": "intfloat/multilingual-e5-large"}):
+def find_most_similar_ensemble(input_text, df,
+                               models= {"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}):
     """
     Finds the most similar verse in the 'dante' column based on the highest similarity score
     across all individual model similarities and the ensemble similarity score.
