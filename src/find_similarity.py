@@ -64,7 +64,7 @@ def find_most_similar_ensemble_old(input_text, df, models=None):
     return most_similar_verse, best_model
 
 
-def find_most_similar_ensemble(input_text, df, models=None):
+def find_most_similar_ensemble(input_text, df, models={"multilingual_e5": "intfloat/multilingual-e5-large"}):
     """
     Finds the most similar verse in the 'dante' column based on the highest similarity score
     across all individual model similarities and the ensemble similarity score.
@@ -147,7 +147,7 @@ def find_most_similar_ensemble(input_text, df, models=None):
     # Determine the top 2 models/ensemble for that row
     similarity_series = df.loc[best_match_idx, similarity_columns]
     # Sort the similarity values in descending order and take the top 2
-    top_two = similarity_series.sort_values(ascending=False).iloc[:2]
+    top_two = similarity_series.sort_values(ascending=False).iloc[:len(models.keys())]
     top_models = []
     for col, sim_value in top_two.items():
         model_name = col.replace("similarity_", "") if col != "similarity_ensemble" else "ensemble"
