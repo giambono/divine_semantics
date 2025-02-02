@@ -1,6 +1,13 @@
 # divine_semantics
 Unlocking Dante's Divine Comedy with NLP-Powered Semantic Search
 
+# pages to extract:
+
+# prompt
+
+extract only the english translation of the canto from the pdf attached and print it 3 verses per line
+no numeration. and print it all. each row you print must contain three verses
+print it so that i can paste it each tercet in one cell in excel
 
 # recalled verses, simulation
 
