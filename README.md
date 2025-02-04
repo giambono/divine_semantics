@@ -1,6 +1,13 @@
 # divine_semantics
 Unlocking Dante's Divine Comedy with NLP-Powered Semantic Search
 
+# optimized weights
+
+{'singleton': 0.015966252220214198,
+'musa': 0.23089382562214905,
+'kirkpatrick': 0.24102546602601177,
+'durling': 0.6832635188254583}
+
 # pages to extract:
 
 # prompt
