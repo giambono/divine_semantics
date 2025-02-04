@@ -18,6 +18,7 @@ def evaluate_performance(df, models, test_queries):
 
             for method in scores.keys():
                 embeddings_matrix = np.vstack(df[method].values)
+                print(embeddings_matrix)
                 similarities = cosine_similarity(query_embedding, embeddings_matrix).flatten()
                 top_match = np.argmax(similarities)
 

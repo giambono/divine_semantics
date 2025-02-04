@@ -88,7 +88,7 @@ if __name__ == "__main__":
                                      columns=["singleton", "musa", "kirkpatrick", "durling"],
                                      models=models,
                                      weights=weights)
-    df.to_pickle(("out/test_set.pkl"))
+    df.to_pickle(("out/ensemble_all_embeddings.pkl"))
 
     df, performance_results = evaluate_performance(df, models, test_queries)
 
