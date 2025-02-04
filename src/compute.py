@@ -8,7 +8,6 @@ from sentence_transformers import SentenceTransformer
 from src.performance import evaluate_performance
 
 
-@evaluate_performance
 def compute_ensemble_embeddings(df, columns, models=None, weights=None):
     """
     Computes embeddings using different strategies: averaging, concatenation, weighted, and single translation embeddings.
@@ -66,19 +65,16 @@ if __name__ == "__main__":
 
 
     df = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/ensemble_embeddings.pkl")
-
     df = df[['volume', 'canto', 'verse', 'dante', 'singleton', 'musa', 'kirkpatrick', 'durling']]
 
-    # === USAGE EXAMPLE ===
-    test_queries = {
-        "midway_query": "midway upon the journey of our life",
-        "dark_wood_query": "when i saw him in the desert"
-    }
+    test_queries = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/test_set.pkl")
 
-    ground_truth = {
-        "midway_query": 0,  # Expected verse index
-        "dark_wood_query": 21
-    }
+    test_queries = test_queries[["query", "expected_index"]]
+
+    test_queries = dict(zip(test_queries.iloc[:, 0], test_queries.iloc[:, 1]))
+
+    # models={"fake": FakeModel()}
+    models={"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
 
     weights = {
         "dante": 0.0,
@@ -88,9 +84,13 @@ if __name__ == "__main__":
         "durling": 0.3,
     }
 
-    df, scores = compute_ensemble_embeddings(df, ["singleton", "musa", "kirkpatrick", "durling"],
-                                             models={"fake": FakeModel()},
-                                             test_queries=test_queries, ground_truth=ground_truth, weights=weights)
+    df = compute_ensemble_embeddings(df,
+                                     columns=["singleton", "musa", "kirkpatrick", "durling"],
+                                     models=models,
+                                     weights=weights)
+    df.to_pickle(("out/test_set.pkl"))
+
+    df, performance_results = evaluate_performance(df, models, test_queries)
 
     print("\nPerformance Scores:")
-    print(scores)
+    print(performance_results)
