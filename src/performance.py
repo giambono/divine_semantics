@@ -26,7 +26,7 @@ def evaluate_performance(func):
             for model_name in models.keys():
                 print(f"Evaluating {model_name}...")
 
-                scores = {method: [] for method in ["avg", "concat", "weighted"] if f"embedding_{model_name}_{method}" in df.columns}
+                scores = {method: [] for method in ["avg", "weighted"] if f"embedding_{model_name}_{method}" in df.columns}
 
                 for query_name, query_text in test_queries.items():
                     query_embedding = models[model_name].encode(query_text).reshape(1, -1)

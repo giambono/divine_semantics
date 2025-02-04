@@ -46,13 +46,6 @@ def compute_ensemble_embeddings(df, columns, models=None, weights=None):
             axis=1
         )
 
-        df[f"embedding_{model_name}_concat"] = df.apply(
-            lambda row: np.concatenate(
-                [row[f"embedding_{model_name}_{col}"] for col in columns if pd.notnull(row[col])], axis=0
-            ),
-            axis=1
-        )
-
         if weights:
             df[f"embedding_{model_name}_weighted"] = df.apply(
                 lambda row: np.sum(
@@ -69,8 +62,12 @@ def compute_ensemble_embeddings(df, columns, models=None, weights=None):
 
 
 if __name__ == "__main__":
+    from src.fake import FakeModel
+
 
     df = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/ensemble_embeddings.pkl")
+
+    df = df[['volume', 'canto', 'verse', 'dante', 'singleton', 'musa', 'kirkpatrick', 'durling']]
 
     # === USAGE EXAMPLE ===
     test_queries = {
@@ -84,13 +81,15 @@ if __name__ == "__main__":
     }
 
     weights = {
-        "dante": 0.5,
-        "translation_1": 0.3,
-        "translation_2": 0.2
+        "dante": 0.0,
+        "singleton": 0.1,
+        "musa": 0.3,
+        "kirkpatrick": 0.3,
+        "durling": 0.3,
     }
 
     df, scores = compute_ensemble_embeddings(df, ["singleton", "musa", "kirkpatrick", "durling"],
-                                             models={"model_1": SentenceTransformer("intfloat/multilingual-e5-large")},
+                                             models={"fake": FakeModel()},
                                              test_queries=test_queries, ground_truth=ground_truth, weights=weights)
 
     print("\nPerformance Scores:")
