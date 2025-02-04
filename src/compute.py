@@ -1,38 +1,3 @@
-import yaml
-import numpy as np
-import pandas as pd
-from sentence_transformers import SentenceTransformer
-
-
-def compute_ensemble_embeddings_old(df, columns, models=None):
-    """
-    Computes embeddings for each model and stores them in separate columns.
-
-    Parameters:
-    df (pd.DataFrame): The DataFrame with verse translations.
-    columns (list): The text columns to embed.
-    models (dict, optional): A dictionary of models to use for embeddings.
-                             If not provided, the default models from the config will be used.
-                             Format: {"model_name": SentenceTransformer(model_path), ...}
-
-    Returns:
-    pd.DataFrame: DataFrame with separate embeddings for each model.
-    """
-    # Load default models from config if none are provided
-    if models is None:
-        with open("config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
-
-    # Compute embeddings for each model
-    for model_name, model in models.items():
-        print(f"Computing embeddings with {model_name}...")
-        df[f"embedding_{model_name}"] = df.apply(
-            lambda row: np.mean([model.encode(row[col]) for col in columns if pd.notnull(row[col])], axis=0),
-            axis=1
-        )
-    return df
-
 import numpy as np
 import pandas as pd
 import yaml
@@ -40,74 +5,93 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
 
-def compute_ensemble_embeddings(df, columns, models=None):
+from src.performance import evaluate_performance
+
+
+@evaluate_performance
+def compute_ensemble_embeddings(df, columns, models=None, weights=None):
     """
-    Computes embeddings for each model and stores them in separate columns.
+    Computes embeddings using different strategies: averaging, concatenation, weighted, and single translation embeddings.
 
     Parameters:
     df (pd.DataFrame): The DataFrame with verse translations.
     columns (list): The text columns to embed.
     models (dict, optional): A dictionary of models to use for embeddings.
-                             If not provided, the default models from the config will be used.
-                             Format: {"model_name": model_instance, ...}
-                             Note: For "facebook/contriever", model_instance should be an instance of AutoModel.
-                                   Its corresponding tokenizer will be loaded automatically.
+    weights (dict, optional): Dictionary of weights for each translation column (for weighted embeddings).
 
     Returns:
     pd.DataFrame: DataFrame with separate embeddings for each model.
     """
-    # Load default models from config if none are provided
+    # Load default models if not provided
     if models is None:
         with open("config.yaml", "r") as f:
             config = yaml.safe_load(f)
-        models = {}
-        for name, path in config["models"].items():
-            if name == "facebook/contriever":
-                # For contriever, load the AutoModel from transformers.
-                models[name] = AutoModel.from_pretrained(path)
-            else:
-                models[name] = SentenceTransformer(path)
+        models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
 
-    # Iterate over each model and compute embeddings
+    # Compute embeddings
     for model_name, model in models.items():
         print(f"Computing embeddings with {model_name}...")
 
-        # Special handling for facebook/contriever which requires manual mean pooling.
-        if model_name == "facebook/contriever":
-            tokenizer = AutoTokenizer.from_pretrained("facebook/contriever")
-
-            def encode_contriever(text):
-                # Tokenize the text
-                inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-                # Get the model output
-                outputs = model(**inputs)
-                # Extract token embeddings from the last hidden state
-                token_embeddings = outputs.last_hidden_state  # shape: [batch_size, seq_len, hidden_dim]
-                # Get the attention mask and expand its dimensions to match token_embeddings
-                attention_mask = inputs["attention_mask"].unsqueeze(-1).float()  # shape: [batch_size, seq_len, 1]
-                # Compute the sum of embeddings for tokens that are not padding
-                sum_embeddings = torch.sum(token_embeddings * attention_mask, dim=1)
-                # Avoid division by zero
-                sum_mask = torch.clamp(attention_mask.sum(dim=1), min=1e-9)
-                # Compute the mean by dividing the summed embeddings by the sum of the mask
-                mean_embedding = sum_embeddings / sum_mask
-                return mean_embedding.squeeze(0).detach().cpu().numpy()
-
-            # Apply encoding for each row and compute the mean across specified columns
-            df[f"embedding_{model_name}"] = df.apply(
-                lambda row: np.mean(
-                    [encode_contriever(row[col]) for col in columns if pd.notnull(row[col])],
-                    axis=0
-                ),
-                axis=1
+        # Compute single translation embeddings
+        for col in columns:
+            df[f"embedding_{model_name}_{col}"] = df[col].apply(
+                lambda text: model.encode(text) if pd.notnull(text) else np.zeros(model.get_sentence_embedding_dimension())
             )
-        else:
-            # Use SentenceTransformer's encode method for other models
-            df[f"embedding_{model_name}"] = df.apply(
-                lambda row: np.mean(
-                    [model.encode(row[col]) for col in columns if pd.notnull(row[col])],
-                    axis=0
+
+        # Compute aggregation methods
+        df[f"embedding_{model_name}_avg"] = df.apply(
+            lambda row: np.mean(
+                [row[f"embedding_{model_name}_{col}"] for col in columns if pd.notnull(row[col])], axis=0
+            ),
+            axis=1
+        )
+
+        df[f"embedding_{model_name}_concat"] = df.apply(
+            lambda row: np.concatenate(
+                [row[f"embedding_{model_name}_{col}"] for col in columns if pd.notnull(row[col])], axis=0
+            ),
+            axis=1
+        )
+
+        if weights:
+            df[f"embedding_{model_name}_weighted"] = df.apply(
+                lambda row: np.sum(
+                    [
+                        weights[col] * row[f"embedding_{model_name}_{col}"]
+                        for col in columns if pd.notnull(row[col])
+                    ],
+                    axis=0,
                 ),
-                axis=1
+                axis=1,
             )
-    return df
+
+    return df  # Only return the DataFrame, the decorator will handle evaluation
+
+
+if __name__ == "__main__":
+
+    df = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/ensemble_embeddings.pkl")
+
+    # === USAGE EXAMPLE ===
+    test_queries = {
+        "midway_query": "midway upon the journey of our life",
+        "dark_wood_query": "when i saw him in the desert"
+    }
+
+    ground_truth = {
+        "midway_query": 0,  # Expected verse index
+        "dark_wood_query": 21
+    }
+
+    weights = {
+        "dante": 0.5,
+        "translation_1": 0.3,
+        "translation_2": 0.2
+    }
+
+    df, scores = compute_ensemble_embeddings(df, ["singleton", "musa", "kirkpatrick", "durling"],
+                                             models={"model_1": SentenceTransformer("intfloat/multilingual-e5-large")},
+                                             test_queries=test_queries, ground_truth=ground_truth, weights=weights)
+
+    print("\nPerformance Scores:")
+    print(scores)

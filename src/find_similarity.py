@@ -148,7 +148,7 @@ def find_most_similar_ensemble(input_text, df,
     # Determine the top 2 models/ensemble for that row
     similarity_series = df.loc[best_match_idx, similarity_columns]
     # Sort the similarity values in descending order and take the top 2
-    top_two = similarity_series.sort_values(ascending=False).iloc[:len(models.keys())]
+    top_two = similarity_series.sort_values(ascending=False).iloc[:53]
     top_models = []
     for col, sim_value in top_two.items():
         model_name = col.replace("similarity_", "") if col != "similarity_ensemble" else "ensemble"
