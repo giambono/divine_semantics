@@ -19,3 +19,8 @@ def clean_dataframe(df):
         .apply(lambda x: x.str.lower())  # Convert to lowercase
     )
     return df_cleaned
+
+
+def get_non_zero_keys(dictionary):
+    """Return list of keys with values greater than 0."""
+    return [key for key, value in dictionary.items() if value > 0]

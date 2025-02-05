@@ -8,6 +8,8 @@ TRANSLATIONS_REPO = os.path.join(ROOT, "data/inferno_translations_aligned.ods")
 
 DP_PATH = os.path.join(ROOT, "data", "divine_comedy.db")
 
+TEXTS_FOR_SEMANTIC_SEARCH = {'dante': 0., 'singleton': 0., 'musa': 0.2, 'kirkpatrick': 0.2, 'durling': 0.6}
+
 # #######################################################
 # NLP SETTINGS
 # #######################################################

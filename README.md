@@ -8,6 +8,8 @@ Unlocking Dante's Divine Comedy with NLP-Powered Semantic Search
 'kirkpatrick': 0.24102546602601177,
 'durling': 0.6832635188254583}
 
+normalized weights: musa: 20%, kirkpatrick: 20%, durling: 60%
+
 # pages to extract:
 
 # prompt
