@@ -1,10 +1,17 @@
 import os
 import yaml
 
-# Define the root directory dynamically based on the location of config.py
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# Define path to the YAML configuration file
+TRANSLATIONS_REPO = os.path.join(ROOT, "data/inferno_translations_aligned.ods")
+
+DP_PATH = os.path.join(ROOT, "data", "divine_comedy.db")
+
+# #######################################################
+# NLP SETTINGS
+# #######################################################
+
 CONFIG_NLP_PATH = os.path.join(ROOT, "config_nlp.yaml")
 
 # Load YAML configuration

@@ -1,13 +1,13 @@
+import os
 import pandas as pd
 import sqlite3
 
+import config
+
 # Load the ODS file
-df = pd.read_excel("inferno_translations_aligned.ods", engine="odf")
+df = pd.read_excel(config.TRANSLATIONS_REPO, engine="odf")
 
-
-
-# Connect to (or create) the SQLite database
-conn = sqlite3.connect("../../../data/divine_comedyxxx.db")
+conn = sqlite3.connect(config.DP_PATH)
 cursor = conn.cursor()
 
 cursor.execute("""
