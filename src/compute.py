@@ -5,6 +5,7 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
 
+import config
 from src.performance import evaluate_performance
 
 
@@ -23,9 +24,7 @@ def compute_ensemble_embeddings(df, columns, models=None, weights=None):
     """
     # Load default models if not provided
     if models is None:
-        with open("config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
+        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Compute embeddings
     for model_name, model in models.items():

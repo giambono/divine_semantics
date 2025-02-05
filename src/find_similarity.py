@@ -5,6 +5,8 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoModel, AutoTokenizer
 
+import config
+
 
 def find_most_similar_ensemble_old(input_text, df, models=None):
     """
@@ -24,9 +26,7 @@ def find_most_similar_ensemble_old(input_text, df, models=None):
 
     # Load default models from config if none are provided
     if models is None:
-        with open("config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
+        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Compute query embeddings with "query:" prefix
     input_embeddings = {name: model.encode(f"query: {input_text}") for name, model in models.items()}
@@ -86,17 +86,7 @@ def find_most_similar_ensemble(input_text, df,
     """
     # Load default models from config if none are provided
     if models is None:
-        with open("config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        models = {}
-        for name, path in config["models"].items():
-            if name == "facebook/contriever":
-                models[name] = {
-                    "model": AutoModel.from_pretrained(path),
-                    "tokenizer": AutoTokenizer.from_pretrained("facebook/contriever")
-                }
-            else:
-                models[name] = SentenceTransformer(path)
+        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Compute query embeddings with "query:" prefix for each model
     input_embeddings = {}

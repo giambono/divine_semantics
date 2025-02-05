@@ -7,6 +7,7 @@ from skopt.space import Real
 from skopt.utils import use_named_args
 from sklearn.metrics.pairwise import cosine_similarity
 
+import config
 from src.performance import evaluate_performance
 
 
@@ -19,9 +20,7 @@ def compute_ensemble_embeddings(df, columns, models=None, weights=None, cache=No
 
     # Load models if not provided
     if models is None:
-        with open("config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-        models = {name: SentenceTransformer(path) for name, path in config["models"].items()}
+        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Cache single translation embeddings
     for model_name, model in models.items():
