@@ -37,3 +37,14 @@ it was the beginning of the day
 why imperato r is bulling
 
 o your among us the  best
+
+# Divine Comedy Database
+
+## 1. Setup the Database
+
+Run the following commands:
+
+```sh
+psql -U postgres -d divine_comedy -f database/schema.sql
+psql -U postgres -d divine_comedy -f database/seed_data.sql
+psql -U postgres -d divine_comedy -f database/insert_data.sql
