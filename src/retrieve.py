@@ -48,6 +48,7 @@ def fetch_author_ids_from_db_sqlite(authors):
     finally:
         if conn:
             conn.close()
+    return {name: int(df.loc[df["name"] == name, "id"].values[0]) if name in df["name"].values else None for name in authors}
 
 
 if __name__ == "__main__":

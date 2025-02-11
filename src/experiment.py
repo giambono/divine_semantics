@@ -143,7 +143,7 @@ def process_experiment(model_config, weights_config, is_sqlite=True):
         # Load models and compute embeddings
         models = load_models(model_name, model_config)
         if is_sqlite:
-            df_embeddings = compute_embeddings_sqlite(models, authors_names, weights_config)
+            df_embeddings = compute_embeddings_sqlite(authors_names, model_config["types"], models=models)
         else:
             df_embeddings = compute_embeddings(authors_names, model_config["types"], models=models)
 
