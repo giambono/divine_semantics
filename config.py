@@ -6,7 +6,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 
 TRANSLATIONS_REPO = os.path.join(ROOT, "data/inferno_translations_aligned.ods")
 
-DP_PATH = os.path.join(ROOT, "data", "divine_comedy.db")
+DB_PATH = os.path.join(ROOT, "data", "divine_comedy.db")
 
 EXPERIMENTS_ROOT = os.path.join(ROOT, "experiments")
 os.makedirs(EXPERIMENTS_ROOT, exist_ok=True)

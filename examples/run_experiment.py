@@ -6,16 +6,19 @@ if __name__ == "__main__":
     # MODEL = {"fake": "",
     #          "types": ["TEXT"]
     #          }
-    MODEL = {"multilingual_e5": "intfloat/multilingual-e5-large",
+    IS_SQLITE = True
+    # MODEL = {"multilingual_e5": "intfloat/multilingual-e5-large",
+    #          "types": ["TEXT"]
+    #          }
+    MODEL = {"fake": "",
              "types": ["TEXT"]
              }
-
     WEIGHTS_CONFIG = {
         "name": "weights_2",
         "authors": {"durling": 0.2, "musa": 0.8}
     }
 
-    process_experiment(MODEL, WEIGHTS_CONFIG)
+    process_experiment(MODEL, WEIGHTS_CONFIG, is_sqlite=IS_SQLITE)
 
     # load embedding
     model_name = next(k for k in MODEL if k != "types")

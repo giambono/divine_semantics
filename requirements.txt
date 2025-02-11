@@ -3,3 +3,5 @@ pandas
 sentence-transformers
 pyyaml
 scikit-learn
+mysql-connector-python
+python-dotenv

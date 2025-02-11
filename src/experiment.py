@@ -7,8 +7,10 @@ import hashlib
 
 import config
 from src.compute import compute_embeddings, weighted_avg_embedding
+from src.compute_sqlite import compute_embeddings as compute_embeddings_sqlite
+from src.compute_sqlite import weighted_avg_embedding as weighted_avg_embedding_sqlite
 from src.fake import FakeModel
-from src.retrieve import fetch_author_ids_from_db
+from src.retrieve import fetch_author_ids_from_db, fetch_author_ids_from_db_sqlite
 
 
 def ensure_folder_exists(*paths):
@@ -47,6 +49,12 @@ def load_models(model_name, model_dict):
 def fetch_author_weights(authors_name_weights):
     """Fetch author IDs from database and map them to their corresponding weights."""
     authors_name_ids = fetch_author_ids_from_db(list(authors_name_weights.keys()))
+    return {authors_name_ids[name]: weight for name, weight in authors_name_weights.items()}
+
+
+def fetch_author_weights_sqlite(authors_name_weights):
+    """Fetch author IDs from database and map them to their corresponding weights."""
+    authors_name_ids = fetch_author_ids_from_db_sqlite(list(authors_name_weights.keys()))
     return {authors_name_ids[name]: weight for name, weight in authors_name_weights.items()}
 
 
@@ -101,7 +109,7 @@ def load_embeddings(embeddings_path):
     path = os.path.join(config.ROOT, embeddings_path)
     return pd.read_parquet(path)
 
-def process_experiment(model_config, weights_config):
+def process_experiment(model_config, weights_config, is_sqlite=True):
     """Main function to execute the entire workflow."""
     create_folder_structure()
 
@@ -115,7 +123,10 @@ def process_experiment(model_config, weights_config):
 
     # Compute author weights
     authors_name_weights = weights_config["authors"]
-    authors_id_weights = fetch_author_weights(authors_name_weights)
+    if is_sqlite:
+        authors_id_weights = fetch_author_weights_sqlite(authors_name_weights)
+    else:
+        authors_id_weights = fetch_author_weights(authors_name_weights)
     authors_names = list(authors_name_weights.keys())
 
     # Generate hashes for types and weights
@@ -131,7 +142,10 @@ def process_experiment(model_config, weights_config):
     else:
         # Load models and compute embeddings
         models = load_models(model_name, model_config)
-        df_embeddings = compute_embeddings(authors_names, model_config["types"], models=models)
+        if is_sqlite:
+            df_embeddings = compute_embeddings_sqlite(models, authors_names, weights_config)
+        else:
+            df_embeddings = compute_embeddings(authors_names, model_config["types"], models=models)
 
         # Save embeddings with a unique filename
         save_embeddings(df_embeddings, embeddings_path)
@@ -156,7 +170,7 @@ if __name__ == "__main__":
         "authors": {"durling": 0.2, "musa": 0.8}
     }
 
-    # process_experiment(MODEL, WEIGHTS_CONFIG)
+    process_experiment(MODEL, WEIGHTS_CONFIG)
 
     # load embedding
     model_name = next(k for k in MODEL if k != "types")
