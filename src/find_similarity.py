@@ -36,20 +36,7 @@ def find_most_similar_ensemble(input_text, df,
     # Compute query embeddings with "query:" prefix for each model
     input_embeddings = {}
     for model_name, model_obj in models.items():
-        if model_name == "facebook/contriever":
-            tokenizer = model_obj["tokenizer"]
-            model_instance = model_obj["model"]
-            # Tokenize and encode using mean pooling
-            inputs = tokenizer(f"query: {input_text}", return_tensors="pt", truncation=True, max_length=512)
-            outputs = model_instance(**inputs)
-            token_embeddings = outputs.last_hidden_state  # shape: [batch_size, seq_len, hidden_dim]
-            attention_mask = inputs["attention_mask"].unsqueeze(-1).float()  # shape: [batch_size, seq_len, 1]
-            sum_embeddings = torch.sum(token_embeddings * attention_mask, dim=1)
-            sum_mask = torch.clamp(attention_mask.sum(dim=1), min=1e-9)
-            mean_embedding = sum_embeddings / sum_mask
-            input_embeddings[model_name] = mean_embedding.squeeze(0).detach().cpu().numpy()
-        else:
-            input_embeddings[model_name] = model_obj.encode(f"query: {input_text}")
+        input_embeddings[model_name] = model_obj.encode(f"query: {input_text}")
 
     # Ensure stored embeddings are numpy arrays
     for col in [f"embedding_{key}" for key in models.keys()]:

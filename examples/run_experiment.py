@@ -7,12 +7,12 @@ if __name__ == "__main__":
     #          "types": ["TEXT"]
     #          }
     IS_SQLITE = True
-    # MODEL = {"multilingual_e5": "intfloat/multilingual-e5-large",
-    #          "types": ["TEXT"]
-    #          }
-    MODEL = {"fake": "",
+    MODEL = {"multilingual_e5": "intfloat/multilingual-e5-large",
              "types": ["TEXT"]
              }
+    # MODEL = {"fake": "",
+    #          "types": ["TEXT"]
+    #          }
     WEIGHTS_CONFIG = {
         "name": "weights_2",
         "authors": {"durling": 0.2, "musa": 0.8}
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             break
 
         # Process the input and generate a response
-        response = find_most_similar_ensemble(input_text, df)
+        response = find_most_similar_ensemble(input_text, df, models=MODEL)
 
         # Print the response
         print("Response:", response)
