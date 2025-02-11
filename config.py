@@ -2,7 +2,12 @@ import os
 import yaml
 
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# Detect if running in Google Colab
+if "COLAB_GPU" in os.environ:
+    ROOT = "/content/divine_semantics"
+else:
+    ROOT = os.path.dirname(os.path.abspath(__file__))
+
 
 TRANSLATIONS_REPO = os.path.join(ROOT, "data/inferno_translations_aligned.ods")
 

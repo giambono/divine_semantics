@@ -4,6 +4,7 @@ import sqlite3
 import mysql.connector
 from dotenv import load_dotenv
 
+import config
 
 load_dotenv()
 
@@ -15,7 +16,7 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME"),
 }
 
-DB_PATH = os.getenv("DB_PATH", "divine_comedy.db")
+DB_PATH = config.DB_PATH
 
 def fetch_author_ids_from_db(authors):
     try:
