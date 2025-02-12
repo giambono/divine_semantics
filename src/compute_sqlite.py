@@ -7,6 +7,59 @@ from sentence_transformers import SentenceTransformer
 import config
 
 
+import sqlite3
+import pandas as pd
+
+
+def fetch_cantica_data(cantica_id=None, canto=None, start_verse=None, end_verse=None):
+    """Fetches 'cantica_id', 'canto', 'start_verse', and 'end_verse' from the SQLite database table `divine_comedy`,
+    filtered by the given parameters.
+
+    Parameters:
+        cantica_id (int or None): Filter by cantica ID.
+        canto (int or None): Filter by canto number.
+        start_verse (int or None): Filter by start verse.
+        end_verse (int or None): Filter by end verse.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the filtered results.
+    """
+    conn = sqlite3.connect(config.DB_PATH)
+
+    # Base query
+    query = """
+    SELECT dc.text
+    FROM divine_comedy dc
+    WHERE 1=1
+    """
+
+    # Parameters list
+    params = []
+
+    # Dynamically add filters based on provided arguments
+    if cantica_id is not None:
+        query += " AND dc.cantica_id = ?"
+        params.append(cantica_id)
+    if canto is not None:
+        query += " AND dc.canto = ?"
+        params.append(canto)
+    if start_verse is not None:
+        query += " AND dc.start_verse = ?"
+        params.append(start_verse)
+    if end_verse is not None:
+        query += " AND dc.end_verse = ?"
+        params.append(end_verse)
+
+    query += " AND dc.author_id = 1"
+    query += " AND dc.type_id = 1"
+
+    # Execute the query
+    df = pd.read_sql_query(query, conn, params=params)
+    conn.close()
+
+    return df
+
+
 def fetch_data_from_db(authors, types):
     """Fetches data from the SQLite database table `divine_comedy` filtered by author names and type strings."""
     conn = sqlite3.connect(config.DB_PATH)

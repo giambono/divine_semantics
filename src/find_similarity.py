@@ -65,7 +65,8 @@ def find_most_similar_ensemble_old(input_text, df, models=None):
 
 
 def find_most_similar_ensemble(input_text, df,
-                               models= {"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}):
+                               models= {"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")},
+                               nlargest=5):
     """
     Finds the most similar verse in the 'dante' column based on the highest similarity score
     across all individual model similarities and the ensemble similarity score.
@@ -107,28 +108,12 @@ def find_most_similar_ensemble(input_text, df,
         )[0]
         similarity_columns.append(col_name)
 
-    # Compute ensemble similarity as the average of the individual model similarities
-    df["similarity_ensemble"] = df[similarity_columns].mean(axis=1)
-    similarity_columns.append("similarity_ensemble")
+    topn = df[[col for col in df.columns if col.startswith("similarity")]].stack().nlargest(nlargest)
+    topn_indices = topn.index.get_level_values(0)
 
-    # Identify the best match row (the one with the maximum similarity across any column)
-    best_match_idx = df[similarity_columns].max(axis=1).idxmax()
-    most_similar_verse = df.loc[best_match_idx, "dante"]
+    return df.loc[topn_indices]
 
-    # # Determine which similarity column had the maximum value for that row
-    # best_similarity_series = df.loc[best_match_idx, similarity_columns]
-    # best_similarity_column = best_similarity_series.idxmax()
-    # best_model = best_similarity_column.replace("similarity_", "") if best_similarity_column != "similarity_ensemble" else "ensemble"
 
-    # return most_similar_verse, best_model
-
-    # Determine the top 2 models/ensemble for that row
-    similarity_series = df.loc[best_match_idx, similarity_columns]
-    # Sort the similarity values in descending order and take the top 2
-    top_two = similarity_series.sort_values(ascending=False).iloc[:53]
-    top_models = []
-    for col, sim_value in top_two.items():
-        model_name = col.replace("similarity_", "") if col != "similarity_ensemble" else "ensemble"
-        top_models.append((model_name, sim_value))
-
-    return most_similar_verse, top_models
+    # # Identify the best match row (the one with the maximum similarity across any column)
+    # best_match_idx = df[similarity_columns].max(axis=1).idxmax()
+    # most_similar_verse = df.loc[best_match_idx, "dante"]
