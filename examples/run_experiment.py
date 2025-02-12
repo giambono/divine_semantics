@@ -9,9 +9,21 @@ if __name__ == "__main__":
     # MODEL = {"fake": "",
     #          "types": ["TEXT"]
     #          }
+
+    # 1. a model can have one type only
+    # 2. given a model, we can average model's embeddings on different types
+    # 3. check that authors have rows of the input type
+
     IS_SQLITE = True
-    MODEL = {"multilingual_e5": "intfloat/multilingual-e5-large",
-             "types": ["TEXT"]
+
+    # MODEL = {"key": "multilingual_e5_text",
+    #          "model_name": "intfloat/multilingual-e5-large",
+    #          "type": "TEXT"
+    #          }
+
+    MODEL = {"key": "fake_text",
+             "model_name": "fake",
+             "type": "TEXT"
              }
 
     WEIGHTS_CONFIG = {
@@ -20,16 +32,16 @@ if __name__ == "__main__":
             "dante": 0.0,
             "durling": 0.1,
             "musa": 0.4,
-            "kickpatrick": 0.5
+            "kirkpatrick": 0.5
         }
     }
 
-    # process_experiment(MODEL, WEIGHTS_CONFIG, is_sqlite=IS_SQLITE)
+    process_experiment(MODEL, WEIGHTS_CONFIG, is_sqlite=IS_SQLITE)
 
     # load embedding
-    model_name = next(k for k in MODEL if k != "types")
+    model_key = MODEL["key"]
     weights_name = WEIGHTS_CONFIG["name"]
-    results_path = get_results_filename(model_name, weights_name)
+    results_path = get_results_filename(model_key, weights_name)
     df = load_embeddings(results_path)
     df = df[df["cantica_id"] == 1]
 

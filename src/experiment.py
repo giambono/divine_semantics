@@ -39,11 +39,10 @@ def save_json(data, *path_parts):
         json.dump(data, f, indent=4)
 
 
-def load_models(model_name, model_dict):
+def load_model(model_dict):
     """Loads the appropriate models, using FakeModel for 'fake'."""
-    model_dict_ = {model_name: model_dict[model_name]}
-    return {k: (FakeModel() if k.lower() == "fake" else SentenceTransformer(m)) for k, m in model_dict_.items()
-            }
+    model_key = model_dict["key"]
+    return {model_key: FakeModel() if model_key.lower().startswith("fake") else SentenceTransformer(model_dict["model_name"])}
 
 
 def fetch_author_weights(authors_name_weights):
@@ -76,9 +75,11 @@ def get_types_hash(types_list):
     """Generate a hash from the types list to track changes."""
     return hashlib.md5(json.dumps(sorted(types_list)).encode()).hexdigest()
 
+
 def get_weights_hash(weights_dict):
     """Generate a hash from the weights dictionary to track changes."""
     return hashlib.md5(json.dumps(weights_dict, sort_keys=True).encode()).hexdigest()
+
 
 def get_embeddings_filename(model_name, types_hash=None):
     """Generate a filename for embeddings based on model and types hash."""
@@ -86,16 +87,20 @@ def get_embeddings_filename(model_name, types_hash=None):
         return os.path.join(config.EXPERIMENTS_ROOT, "embeddings", f"{model_name}", "embeddings.parquet")
     return os.path.join(config.EXPERIMENTS_ROOT, "embeddings", f"{model_name}_{types_hash}", "embeddings.parquet")
 
+
 def get_results_filename(model_name, weights_name, weights_hash=None):
     """Generate a filename for results based on weights hash."""
     if weights_hash is None:
         return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_name}_{weights_name}", "embeddings.parquet")
-    return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_name}_{weights_name}_{weights_hash}", "embeddings.parquet")
+    return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_name}_{weights_name}_{weights_hash}",
+                        "embeddings.parquet")
+
 
 def embeddings_exist(embeddings_path):
     """Check if embeddings file exists."""
     path = os.path.join(config.ROOT, embeddings_path)
     return os.path.exists(path)
+
 
 def save_embeddings(df_embeddings, embeddings_path):
     """Save embeddings to a specified path."""
@@ -109,13 +114,14 @@ def load_embeddings(embeddings_path):
     path = os.path.join(config.ROOT, embeddings_path)
     return pd.read_parquet(path)
 
+
 def process_experiment(model_config, weights_config, is_sqlite=True):
     """Main function to execute the entire workflow."""
     create_folder_structure()
 
     # Save model configuration
-    model_name = next(k for k in model_config if k != "types")
-    save_json(model_config, "experiments", "models", model_name, "config.json")
+    model_key = model_config["key"]
+    save_json(model_config, "experiments", "models", model_key, "config.json")
 
     # Save weight configuration
     weights_name = weights_config["name"]
@@ -134,49 +140,28 @@ def process_experiment(model_config, weights_config, is_sqlite=True):
     # weights_hash = get_weights_hash(weights_config["authors"])
 
     # Get the correct embeddings filename
-    embeddings_path = get_embeddings_filename(model_name)
+    embeddings_path = get_embeddings_filename(model_key)
 
     # Load or compute embeddings
     if embeddings_exist(embeddings_path):
         df_embeddings = load_embeddings(embeddings_path)
     else:
         # Load models and compute embeddings
-        models = load_models(model_name, model_config)
+        model = load_model(model_config)
         if is_sqlite:
-            df_embeddings = compute_embeddings_sqlite(authors_names, model_config["types"], models=models)
+            df_embeddings = compute_embeddings_sqlite(authors_names, model_config["type"], models=model)
         else:
-            df_embeddings = compute_embeddings(authors_names, model_config["types"], models=models)
+            df_embeddings = compute_embeddings(authors_names, model_config["type"], models=model)
 
         # Save embeddings with a unique filename
         save_embeddings(df_embeddings, embeddings_path)
 
     # Get the correct results filename based on weights
-    results_path = get_results_filename(model_name, weights_name)
+    results_path = get_results_filename(model_key, weights_name)
 
     # Compute weighted average embeddings (always recompute since weights_config can change)
-    avg_weights_df = weighted_avg_embedding(model_name, df_embeddings, authors_id_weights)
+    avg_weights_df = weighted_avg_embedding(model_key, df_embeddings, authors_id_weights)
 
     # Save weighted embeddings, ensuring different weights configurations do not overwrite
     save_parquet(avg_weights_df, results_path)
-
-
-if __name__ == "__main__":
-    # Example usage
-    MODEL = {"fake": "",
-             "types": ["TEXT"]
-             }
-    WEIGHTS_CONFIG = {
-        "name": "weights_2",
-        "authors": {"durling": 0.2, "musa": 0.8}
-    }
-
-    process_experiment(MODEL, WEIGHTS_CONFIG)
-
-    # load embedding
-    model_name = next(k for k in MODEL if k != "types")
-    weights_name = WEIGHTS_CONFIG["name"]
-    results_path = get_results_filename(model_name, weights_name)
-    df = load_embeddings(results_path)
-
-    df.to_clipboard()
 

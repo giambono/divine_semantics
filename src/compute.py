@@ -82,21 +82,3 @@ def weighted_avg_embedding(model_name, df, author_weights):
     ).reset_index(name=f"weighted_embedding_{model_name}")
 
     return weighted_embeddings
-
-
-if __name__ == "__main__":
-    from fake import FakeModel
-
-    AUTHORS =["musa", "durling"]
-    TYPES = ["TEXT"]
-    MODELS = {"fake": FakeModel()}
-
-    df_embeddings = compute_embeddings(AUTHORS, TYPES, models=MODELS)
-    # df_embeddings.to_clipboard()
-    # print(df_embeddings)
-
-    author_weights_dict = {3: 0.2, 5: 0.8}  # Example author weights
-
-    avg_weights_df = weighted_avg_embedding("fake", df_embeddings, author_weights_dict)
-
-    print()

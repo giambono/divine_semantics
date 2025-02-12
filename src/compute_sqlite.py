@@ -79,23 +79,20 @@ def fetch_data_from_db(authors, types):
     return df
 
 
-def compute_embeddings(authors, types, models=None):
+def compute_embeddings(authors, types, models):
     """
     Computes embeddings using different strategies from data stored in the database, filtering by author names and type strings.
 
     Parameters:
     authors (list): List of author names to filter the data.
     types (list): List of type names to filter the data.
-    models (dict, optional): A dictionary of models to use for embeddings.
+    models (dict): A dictionary of models to use for embeddings.
 
     Returns:
     pd.DataFrame: DataFrame with separate embeddings for each model.
     """
+    types = [types] if isinstance(types, str) else types
     df = fetch_data_from_db(authors, types)
-
-    # Load default models if not provided
-    if models is None:
-        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Compute embeddings
     for model_name, model in models.items():
@@ -129,16 +126,3 @@ def weighted_avg_embedding(model_name, df, author_weights):
 
     return weighted_embeddings
 
-if __name__ == "__main__":
-    from fake import FakeModel
-
-    AUTHORS = ["musa", "durling"]
-    TYPES = ["TEXT"]
-    MODELS = {"fake": FakeModel()}
-
-    df_embeddings = compute_embeddings(AUTHORS, TYPES, models=MODELS)
-
-    author_weights_dict = {3: 0.2, 5: 0.8}  # Example author weights
-    avg_weights_df = weighted_avg_embedding("fake", df_embeddings, author_weights_dict)
-
-    print(avg_weights_df)
