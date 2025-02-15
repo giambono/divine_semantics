@@ -8,27 +8,29 @@ from skopt.utils import use_named_args
 from sklearn.metrics.pairwise import cosine_similarity
 
 import config
-from src.compute import weighted_avg_embedding
 from src.performance import evaluate_performance
 
-author_name_ids = {"dante": 1, "singleton": 2, "musa": 3, "kirkpatrick": 4, "durling": 5}
 
-def compute_ensemble_embeddings(df, authors, models, weights=None, cache=None):
+def compute_ensemble_embeddings(df, columns, models=None, weights=None, cache=None):
     """
     Computes ensemble embeddings with caching.
     """
     if cache is None:
         cache = {}
 
-    # # Cache single translation embeddings
-    # for model_name, model in models.items():
-    #     for author in authors:
-    #         key = f"embedding_{model_name}_{author}"
-    #         if key not in cache:
-    #             df[key] = df[author].apply(
-    #                 lambda text: model.encode(text) if pd.notnull(text) else np.zeros(model.get_sentence_embedding_dimension())
-    #             )
-    #             cache[key] = df[key]
+    # Load models if not provided
+    if models is None:
+        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
+
+    # Cache single translation embeddings
+    for model_name, model in models.items():
+        for col in columns:
+            key = f"embedding_{model_name}_{col}"
+            if key not in cache:
+                df[key] = df[col].apply(
+                    lambda text: model.encode(text) if pd.notnull(text) else np.zeros(model.get_sentence_embedding_dimension())
+                )
+                cache[key] = df[key]
 
     # Compute weighted embeddings
     for model_name in models:
@@ -37,7 +39,7 @@ def compute_ensemble_embeddings(df, authors, models, weights=None, cache=None):
             lambda row: np.sum(
                 [
                     weights[col] * row[f"embedding_{model_name}_{col}"]
-                    for col in authors if pd.notnull(row[col])
+                    for col in columns if pd.notnull(row[col])
                 ],
                 axis=0,
             ),
@@ -60,13 +62,10 @@ def optimize_weights(df, columns, models, test_queries):
     def loss(**weights):
         # Normalize weights to sum to 1
         total_weight = sum(weights.values())
-        normalized_weights = {author_name_ids[key]: val / total_weight for key, val in weights.items()}
+        normalized_weights = {key: val / total_weight for key, val in weights.items()}
 
         # Compute embeddings using cached data
-        # df_embeddings = compute_ensemble_embeddings(df.copy(), columns, models=models, weights=normalized_weights, cache=cache)
-        model_key = list(models.keys())[0]
-        df_embeddings = weighted_avg_embedding(model_key, df.copy(), normalized_weights)
-        df_embeddings.set_index(["cantica_id", "canto", "start_verse", "end_verse"], inplace=True)
+        df_embeddings = compute_ensemble_embeddings(df.copy(), columns, models=models, weights=normalized_weights, cache=cache)
 
         # Evaluate performance using cosine similarity
         _, performance_results = evaluate_performance(df_embeddings, models, test_queries)
@@ -86,9 +85,9 @@ def optimize_weights(df, columns, models, test_queries):
 
 
 if __name__ == "__main__":
-    path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/experiments/embeddings/multilingual_e5/embeddings.parquet"
-    df = pd.read_parquet(path)
-    df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]
+
+    df = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/ensemble_embeddings.pkl")
+    df = df[['volume', 'canto', 'verse', 'dante', 'singleton', 'musa', 'kirkpatrick', 'durling']]
 
     test_queries = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/test_set.pkl")
     test_queries = test_queries[["query", "expected_index"]]
@@ -96,6 +95,6 @@ if __name__ == "__main__":
 
     models={"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
 
-    best_weights = optimize_weights(df, ["dante", "musa", "kirkpatrick", "durling"], models, test_queries)
+    best_weights = optimize_weights(df, ["dante", "singleton", "musa", "kirkpatrick", "durling"], models, test_queries)
 
     print("Best Weights Found:", best_weights)

@@ -1,54 +1,23 @@
-import os
 import pandas as pd
 import numpy as np
-import mysql.connector
-from sentence_transformers import SentenceTransformer
-from dotenv import load_dotenv
 
-import config
+from src.db_helper import fetch_data_from_db
 
-load_dotenv()
 
-# Database connection configuration
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME"),
-}
-
-def fetch_data_from_db(authors, types):
-    """Fetches data from the MySQL database table `divine_comedy` filtered by author names and type strings."""
-    conn = mysql.connector.connect(**DB_CONFIG)
-    query = f"""
-    SELECT dc.cantica_id, dc.canto, dc.start_verse, dc.end_verse, dc.text, a.id AS author_id, t.id AS type_id
-    FROM divine_comedy dc
-    JOIN author a ON dc.author_id = a.id
-    JOIN type t ON dc.type_id = t.id
-    WHERE a.name IN ({','.join(['%s'] * len(authors))})
-    AND t.name IN ({','.join(['%s'] * len(types))})
-    """
-    df = pd.read_sql(query, conn, params=authors + types)
-    conn.close()
-    return df
-
-def compute_embeddings(authors, types, models=None):
+def compute_embeddings(authors, types, models):
     """
     Computes embeddings using different strategies from data stored in the database, filtering by author names and type strings.
 
     Parameters:
     authors (list): List of author names to filter the data.
     types (list): List of type names to filter the data.
-    models (dict, optional): A dictionary of models to use for embeddings.
+    models (dict): A dictionary of models to use for embeddings.
 
     Returns:
     pd.DataFrame: DataFrame with separate embeddings for each model.
     """
+    types = [types] if isinstance(types, str) else types
     df = fetch_data_from_db(authors, types)
-
-    # Load default models if not provided
-    if models is None:
-        models = {name: SentenceTransformer(path) for name, path in config.MODELS.items()}
 
     # Compute embeddings
     for model_name, model in models.items():

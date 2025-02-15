@@ -4,7 +4,7 @@ import os
 
 import config
 
-
-df = pd.read_csv("/home/rfflpllcn/IdeaProjects/divine_semantics/data/outlines.csv")
+path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/experiments/embeddings/multilingual_e5/embeddings.parquet"
+df = pd.read_parquet(path)
 
 print(df)

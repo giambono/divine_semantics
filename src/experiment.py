@@ -7,10 +7,8 @@ import hashlib
 
 import config
 from src.compute import compute_embeddings, weighted_avg_embedding
-from src.compute_sqlite import compute_embeddings as compute_embeddings_sqlite
-from src.compute_sqlite import weighted_avg_embedding as weighted_avg_embedding_sqlite
 from src.fake import FakeModel
-from src.retrieve import fetch_author_ids_from_db, fetch_author_ids_from_db_sqlite
+from src.db_helper import fetch_author_ids_from_db
 
 
 def ensure_folder_exists(*paths):
@@ -42,19 +40,8 @@ def save_json(data, *path_parts):
 def load_model(model_dict):
     """Loads the appropriate models, using FakeModel for 'fake'."""
     model_key = model_dict["key"]
-    return {model_key: FakeModel() if model_key.lower().startswith("fake") else SentenceTransformer(model_dict["model_name"])}
-
-
-def fetch_author_weights(authors_name_weights):
-    """Fetch author IDs from database and map them to their corresponding weights."""
-    authors_name_ids = fetch_author_ids_from_db(list(authors_name_weights.keys()))
-    return {authors_name_ids[name]: weight for name, weight in authors_name_weights.items()}
-
-
-def fetch_author_weights_sqlite(authors_name_weights):
-    """Fetch author IDs from database and map them to their corresponding weights."""
-    authors_name_ids = fetch_author_ids_from_db_sqlite(list(authors_name_weights.keys()))
-    return {authors_name_ids[name]: weight for name, weight in authors_name_weights.items()}
+    return {model_key: FakeModel() if model_key.lower().startswith("fake") else SentenceTransformer(
+        model_dict["model_name"])}
 
 
 def load_parquet(*path_segments):
@@ -88,11 +75,11 @@ def get_embeddings_filename(model_name, types_hash=None):
     return os.path.join(config.EXPERIMENTS_ROOT, "embeddings", f"{model_name}_{types_hash}", "embeddings.parquet")
 
 
-def get_results_filename(model_name, weights_name, weights_hash=None):
+def get_results_filename(model_key, weights_key, weights_hash=None):
     """Generate a filename for results based on weights hash."""
     if weights_hash is None:
-        return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_name}_{weights_name}", "embeddings.parquet")
-    return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_name}_{weights_name}_{weights_hash}",
+        return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_key}_{weights_key}", "embeddings.parquet")
+    return os.path.join(config.EXPERIMENTS_ROOT, "results", f"{model_key}_{weights_key}_{weights_hash}",
                         "embeddings.parquet")
 
 
@@ -115,7 +102,7 @@ def load_embeddings(embeddings_path):
     return pd.read_parquet(path)
 
 
-def process_experiment(model_config, weights_config, is_sqlite=True):
+def process_experiment(model_config, weights_config):
     """Main function to execute the entire workflow."""
     create_folder_structure()
 
@@ -124,16 +111,16 @@ def process_experiment(model_config, weights_config, is_sqlite=True):
     save_json(model_config, "experiments", "models", model_key, "config.json")
 
     # Save weight configuration
-    weights_name = weights_config["name"]
-    save_json(weights_config, "experiments", "weights", f"{weights_name}.json")
+    weights_key = weights_config["key"]
+    save_json(weights_config, "experiments", "weights", f"{weights_key}.json")
 
     # Compute author weights
     authors_name_weights = weights_config["authors"]
-    if is_sqlite:
-        authors_id_weights = fetch_author_weights_sqlite(authors_name_weights)
-    else:
-        authors_id_weights = fetch_author_weights(authors_name_weights)
     authors_names = list(authors_name_weights.keys())
+
+    authors_name_ids = fetch_author_ids_from_db(authors_names)
+    authors_id_weights = {authors_name_ids[name]: weight for name, weight in authors_name_weights.items() if
+                          name in authors_name_ids}
 
     # Generate hashes for types and weights
     # types_hash = get_types_hash(weights_config["types"])
@@ -148,20 +135,16 @@ def process_experiment(model_config, weights_config, is_sqlite=True):
     else:
         # Load models and compute embeddings
         model = load_model(model_config)
-        if is_sqlite:
-            df_embeddings = compute_embeddings_sqlite(authors_names, model_config["type"], models=model)
-        else:
-            df_embeddings = compute_embeddings(authors_names, model_config["type"], models=model)
+        df_embeddings = compute_embeddings(authors_names, model_config["type"], models=model)
 
         # Save embeddings with a unique filename
         save_embeddings(df_embeddings, embeddings_path)
 
     # Get the correct results filename based on weights
-    results_path = get_results_filename(model_key, weights_name)
+    results_path = get_results_filename(model_key, weights_key)
 
     # Compute weighted average embeddings (always recompute since weights_config can change)
     avg_weights_df = weighted_avg_embedding(model_key, df_embeddings, authors_id_weights)
 
     # Save weighted embeddings, ensuring different weights configurations do not overwrite
     save_parquet(avg_weights_df, results_path)
-

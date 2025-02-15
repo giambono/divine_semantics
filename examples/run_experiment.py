@@ -1,7 +1,7 @@
 import pandas as pd
 
-from src.compute_sqlite import fetch_cantica_data
-from src.experiment import process_experiment, get_results_filename, load_embeddings
+from src.db_helper import fetch_cantica_data
+from src.experiment import process_experiment, get_results_filename, load_embeddings, load_model
 from src.find_similarity import find_most_similar_ensemble
 
 if __name__ == "__main__":
@@ -14,20 +14,21 @@ if __name__ == "__main__":
     # 2. given a model, we can average model's embeddings on different types
     # 3. check that authors have rows of the input type
 
-    IS_SQLITE = True
-
     # MODEL = {"key": "multilingual_e5_text",
     #          "model_name": "intfloat/multilingual-e5-large",
     #          "type": "TEXT"
     #          }
-
-    MODEL = {"key": "fake_text",
-             "model_name": "fake",
+    MODEL = {"key": "multilingual_e5",
+             "model_name": "intfloat/multilingual-e5-large",
              "type": "TEXT"
              }
+    # MODEL = {"key": "fake_text",
+    #          "model_name": "fake",
+    #          "type": "TEXT"
+    #          }
 
     WEIGHTS_CONFIG = {
-        "name": "weights_1",
+        "key": "weights_1",
         "authors": {
             "dante": 0.0,
             "durling": 0.1,
@@ -36,12 +37,12 @@ if __name__ == "__main__":
         }
     }
 
-    process_experiment(MODEL, WEIGHTS_CONFIG, is_sqlite=IS_SQLITE)
+    # process_experiment(MODEL, WEIGHTS_CONFIG)
 
     # load embedding
     model_key = MODEL["key"]
-    weights_name = WEIGHTS_CONFIG["name"]
-    results_path = get_results_filename(model_key, weights_name)
+    weights_key = WEIGHTS_CONFIG["key"]
+    results_path = get_results_filename(model_key, weights_key)
     df = load_embeddings(results_path)
     df = df[df["cantica_id"] == 1]
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
             print("Exiting the loop. Goodbye!")
             break
 
-        response = find_most_similar_ensemble(input_text, df)
+        response = find_most_similar_ensemble(input_text, df, models=load_model(MODEL))
 
         params = response.iloc[0][['cantica_id', 'canto', 'start_verse', 'end_verse']].to_dict()
 
