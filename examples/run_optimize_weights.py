@@ -14,7 +14,8 @@ if __name__ == "__main__":
 
     embedding_path = os.path.join(config.EXPERIMENTS_ROOT, f"/embeddings/{model_key}/embeddings.parquet")
     df = pd.read_parquet(embedding_path)
-    df = df[(df["cantica_id"] == 1) & (df["type_id"] == 1)]
+    df[(df["cantica_id"]==1) & (df["type_id"]==1) & (df["author_id"]!=1)]  # excluding dante
+    # df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]  # only type = text
 
     test_queries = pd.read_pickle(os.path.join(config.ROOT, "out/test_set.pkl"))
     test_queries = test_queries[["query", "expected_index"]]

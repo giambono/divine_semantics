@@ -13,45 +13,11 @@ from src.performance import evaluate_performance
 
 author_name_ids = {"dante": 1, "singleton": 2, "musa": 3, "kirkpatrick": 4, "durling": 5}
 
-def compute_ensemble_embeddings(df, authors, models, weights=None, cache=None):
-    """
-    Computes ensemble embeddings with caching.
-    """
-    if cache is None:
-        cache = {}
-
-    # # Cache single translation embeddings
-    # for model_name, model in models.items():
-    #     for author in authors:
-    #         key = f"embedding_{model_name}_{author}"
-    #         if key not in cache:
-    #             df[key] = df[author].apply(
-    #                 lambda text: model.encode(text) if pd.notnull(text) else np.zeros(model.get_sentence_embedding_dimension())
-    #             )
-    #             cache[key] = df[key]
-
-    # Compute weighted embeddings
-    for model_name in models:
-        weighted_embedding_key = f"embedding_{model_name}_weighted"
-        df[weighted_embedding_key] = df.apply(
-            lambda row: np.sum(
-                [
-                    weights[col] * row[f"embedding_{model_name}_{col}"]
-                    for col in authors if pd.notnull(row[col])
-                ],
-                axis=0,
-            ),
-            axis=1,
-        )
-
-    return df  # Return DataFrame with embeddings
-
 
 def optimize_weights(df, columns, models, test_queries):
     """
     Bayesian Optimization for best embedding weights using cosine similarity.
     """
-    cache = {}  # Store cached embeddings
 
     # Define weight search space (each weight between 0 and 1)
     space = [Real(0.0, 1.0, name=col) for col in columns]
@@ -62,8 +28,7 @@ def optimize_weights(df, columns, models, test_queries):
         total_weight = sum(weights.values())
         normalized_weights = {author_name_ids[key]: val / total_weight for key, val in weights.items()}
 
-        # Compute embeddings using cached data
-        # df_embeddings = compute_ensemble_embeddings(df.copy(), columns, models=models, weights=normalized_weights, cache=cache)
+        # Compute average embeddings
         model_key = list(models.keys())[0]
         df_embeddings = weighted_avg_embedding(model_key, df.copy(), normalized_weights)
         df_embeddings.set_index(["cantica_id", "canto", "start_verse", "end_verse"], inplace=True)
@@ -88,7 +53,8 @@ def optimize_weights(df, columns, models, test_queries):
 if __name__ == "__main__":
     path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/experiments/embeddings/multilingual_e5/embeddings.parquet"
     df = pd.read_parquet(path)
-    df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]
+    df = df[(df["cantica_id"]==1) & (df["type_id"]==1) & (df["author_id"]!=1)]  # excluding dante
+    # df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]  # only type = text
 
     test_queries = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/test_set.pkl")
     test_queries = test_queries[["query", "expected_index"]]
