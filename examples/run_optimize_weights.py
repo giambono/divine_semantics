@@ -1,25 +1,14 @@
-import numpy as np
+import os
 import pandas as pd
-import yaml
 from sentence_transformers import SentenceTransformer
-from skopt import gp_minimize
-from skopt.space import Real
-from skopt.utils import use_named_args
-from sklearn.metrics.pairwise import cosine_similarity
 
 import config
-from src.compute import weighted_avg_embedding
-from src.experiment import embeddings_exist
-from src.performance import evaluate_performance
 from src.optimize_weights import optimize_weights
 
 author_name_ids = {"dante": 1, "singleton": 2, "musa": 3, "kirkpatrick": 4, "durling": 5}
 
 
 if __name__ == "__main__":
-    import os
-    import config
-
     model_key = "multilingual_e5"
     models = {"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
 

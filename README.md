@@ -1,14 +1,15 @@
 # divine_semantics
+
 Unlocking Dante's Divine Comedy with NLP-Powered Semantic Search
 
 # optimized weights
+models = {"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
+df = df[(df["cantica_id"] == 1) & (df["type_id"] == 1)]
 
-{'singleton': 0.015966252220214198,
-'musa': 0.23089382562214905,
-'kirkpatrick': 0.24102546602601177,
-'durling': 0.6832635188254583}
-
-normalized weights: musa: 20%, kirkpatrick: 20%, durling: 60%
+{'dante': 0.3330178901068889, 
+'musa': 0.07467696196887205, 
+'kirkpatrick': 0.3430391689652815, 
+'durling': 0.24926597895895738}
 
 # pages to extract:
 
@@ -36,7 +37,7 @@ it was the beginning of the day
 
 why imperato r is bulling
 
-o your among us the  best
+o your among us the best
 
 # Divine Comedy Database
 
