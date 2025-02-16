@@ -56,7 +56,8 @@ if __name__ == "__main__":
     df = df[(df["cantica_id"]==1) & (df["type_id"]==1) & (df["author_id"]!=1)]  # excluding dante
     # df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]  # only type = text
 
-    test_queries = pd.read_pickle("/home/rfflpllcn/IdeaProjects/divine_semantics/out/test_set.pkl")
+    path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/data/paraphrased_verses.parquet"
+    test_queries = pd.read_parquet(path)
     test_queries = test_queries[["query", "expected_index"]]
     test_queries = dict(zip(test_queries.iloc[:, 0], test_queries.iloc[:, 1]))
 
