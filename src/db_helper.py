@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import mysql.connector
 import pandas as pd
@@ -99,3 +100,19 @@ def fetch_author_ids_from_db(authors):
             conn.close()
 
     return {name: int(df.loc[df["name"] == name, "id"].values[0]) if name in df["name"].values else None for name in authors}
+
+
+def fetch_cumulative_indices(cantica_id, canto, start_verse, end_verse):
+    """Fetch cumulative indices given cantica, canto, and verse."""
+    conn = get_db_connection()
+    query = """
+    SELECT cumulative_indices FROM verse_mappings
+    WHERE cantica_id = ? AND canto = ? AND start_verse = ? and end_verse = ?
+    """
+    result = pd.read_sql(query, conn, params=(cantica_id, canto, start_verse, end_verse))
+    conn.close()
+
+    if result.empty:
+        return None
+
+    return json.loads(result.iloc[0]["cumulative_indices"])
