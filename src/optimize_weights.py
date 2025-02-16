@@ -35,10 +35,11 @@ def optimize_weights(df, columns, models, test_queries):
         df_embeddings.set_index(["cantica_id", "canto", "start_verse", "end_verse"], inplace=True)
 
         # Evaluate performance using cosine similarity
-        _, performance_results = evaluate_performance(df_embeddings, models, test_queries)
+        _, performance_results, correct_queries, incorrect_queries = evaluate_performance(df_embeddings, models, test_queries)
 
         # Get the average accuracy across models
         avg_accuracy = np.mean([np.mean(list(performance.values())) for performance in performance_results.values()])
+        # print(f"Iteration Incorrect Queries: {incorrect_queries}")
 
         return -avg_accuracy  # We minimize the negative accuracy to maximize accuracy
 
@@ -60,6 +61,8 @@ if __name__ == "__main__":
 
     path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/data/paraphrased_verses.parquet"
     test_queries = pd.read_parquet(path)
+    # test_queries = test_queries.iloc[:10]
+
     test_queries = test_queries[["transformed_text", "expected_index"]]
     test_queries = dict(zip(test_queries.iloc[:, 0], test_queries.iloc[:, 1]))
 

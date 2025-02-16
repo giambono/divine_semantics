@@ -24,6 +24,8 @@ def evaluate_performance(df, models, test_queries):
     model_key = list(models.keys())[0]
     scores = {method: [] for method in [col for col in df.columns if col.startswith("weighted_embedding_")]}
 
+    correct_queries = []
+    incorrect_queries = []
     for query_text, expected_index in test_queries.items():
         query_embedding = models[model_key].encode(query_text).reshape(1, -1)
 
@@ -46,7 +48,13 @@ def evaluate_performance(df, models, test_queries):
             score = 1 if expected_index in _indices else 0
             scores[method].append(score)
 
+            if score == 1:
+                correct_queries.append(query_text)
+            else:
+                incorrect_queries.append(query_text)
+
     # Compute mean accuracy per method
     performance_results[model_key] = {method: np.mean(scores[method]) for method in scores}
 
-    return df, performance_results
+    return df, performance_results, correct_queries, incorrect_queries
+
