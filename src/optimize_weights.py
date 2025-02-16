@@ -9,6 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 import config
 from src.compute import weighted_avg_embedding
+from src.db_helper import get_db_connection
 from src.performance import evaluate_performance
 
 author_name_ids = {"dante": 1, "singleton": 2, "musa": 3, "kirkpatrick": 4, "durling": 5}
@@ -51,6 +52,7 @@ def optimize_weights(df, columns, models, test_queries):
 
 
 if __name__ == "__main__":
+
     path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/experiments/embeddings/multilingual_e5/embeddings.parquet"
     df = pd.read_parquet(path)
     df = df[(df["cantica_id"]==1) & (df["type_id"]==1) & (df["author_id"]!=1)]  # excluding dante
@@ -58,11 +60,11 @@ if __name__ == "__main__":
 
     path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/data/paraphrased_verses.parquet"
     test_queries = pd.read_parquet(path)
-    test_queries = test_queries[["query", "expected_index"]]
+    test_queries = test_queries[["transformed_text", "expected_index"]]
     test_queries = dict(zip(test_queries.iloc[:, 0], test_queries.iloc[:, 1]))
 
     models={"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
 
-    best_weights = optimize_weights(df, ["dante", "musa", "kirkpatrick", "durling"], models, test_queries)
+    best_weights = optimize_weights(df, ["musa", "kirkpatrick", "durling"], models, test_queries)
 
     print("Best Weights Found:", best_weights)
