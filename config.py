@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_TYPE = "sqlite"  # Change to "mysql" when needed
+DB_TYPE = "sqlite"
 
 
 # Detect if running in Google Colab
@@ -13,21 +13,12 @@ if "COLAB_GPU" in os.environ:
 else:
     ROOT = os.path.dirname(os.path.abspath(__file__))
 
-TRANSLATIONS_REPO = os.path.join(ROOT, "data/inferno_translations_aligned.ods")
 
 EXPERIMENTS_ROOT = os.path.join(ROOT, "experiments")
 os.makedirs(EXPERIMENTS_ROOT, exist_ok=True)
 
-# MySQL Config
-MYSQL_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME"),
-}
-
 # SQLite Config
-SQLITE_DB_PATH = os.path.join(ROOT, "data", "divine_comedy.db")
+SQLITE_DB_PATH = os.path.join(ROOT, "database", "divine_comedy.db")
 
 # #######################################################
 # NLP SETTINGS

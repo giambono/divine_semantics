@@ -8,11 +8,75 @@ import config
 def get_db_connection():
     """Returns a database connection based on the configured DB_TYPE."""
     if config.DB_TYPE == "mysql":
-        return mysql.connector.connect(**config.MYSQL_CONFIG)
+        raise NotImplemented("support for MySQL databases not implemented")
+        # return mysql.connector.connect(**config.MYSQL_CONFIG)
     elif config.DB_TYPE == "sqlite":
         return sqlite3.connect(config.SQLITE_DB_PATH)
     else:
         raise ValueError("Unsupported database type. Use 'mysql' or 'sqlite'.")
+
+
+def retrieve_text(cantica_name, canto, start_verse, end_verse, author_names, type_name):
+    """
+    Retrieves text fragments from the database spanning a given verse range,
+    supporting both SQLite and MySQL based on config.DB_TYPE.
+
+    Parameters:
+      - author_names: a single author name or a list of author names.
+      - type_name: the type name (e.g., translation type).
+      - cantica_name: the cantica (e.g., 'Inferno', 'Purgatorio', 'Paradiso').
+      - canto: the canto number.
+      - start_verse: the starting verse number of the desired range.
+      - end_verse: the ending verse number of the desired range.
+
+    Returns:
+      A dictionary mapping each author's name to the concatenated text
+      fragments that overlap the specified verse range.
+    """
+    # Ensure author_names is a list
+    if isinstance(author_names, str):
+        author_names = [author_names]
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Set the placeholder style based on the DB type
+    placeholder = '%s' if config.DB_TYPE == "mysql" else '?'
+    placeholders_authors = ','.join([placeholder for _ in author_names])
+
+    # Build query: select rows that overlap with the desired verse range.
+    # Using d.start_verse <= requested_end_verse and d.end_verse >= requested_start_verse
+    # ensures any overlapping row is included.
+    query = """
+    SELECT a.name, d.text, d.start_verse
+    FROM divine_comedy d
+    JOIN author a ON d.author_id = a.id
+    JOIN type t ON d.type_id = t.id
+    WHERE a.name IN ({authors})
+      AND t.name = {ph}
+      AND d.cantica_id = {ph}
+      AND d.canto = {ph}
+      AND d.start_verse <= {ph}
+      AND d.end_verse >= {ph}
+    ORDER BY d.start_verse ASC
+    """.format(authors=placeholders_authors, ph=placeholder)
+
+    # Parameters: authors first, then type, cantica, canto,
+    # then the verse range (note the order: end_verse for d.start_verse and start_verse for d.end_verse)
+    params = author_names + [type_name, cantica_name, canto, end_verse, start_verse]
+    cur.execute(query, params)
+    rows = cur.fetchall()
+
+    # Aggregate text fragments for each author
+    result = {}
+    for author, text, _ in rows:
+        if author in result:
+            result[author] += " " + text
+        else:
+            result[author] = text
+
+    conn.close()
+    return result
 
 
 def fetch_data_from_db(authors, types):
@@ -115,4 +179,40 @@ def fetch_cumulative_indices(cantica_id, canto, start_verse, end_verse):
     if result.empty:
         return None
 
-    return json.loads(result.iloc[0]["cumulative_indices"])
+    return json.loads(json.loads(result.iloc[0]["cumulative_indices"]))
+
+
+if __name__ == "__main__":
+
+
+    # from datasets import load_dataset
+    #
+    # dataset = load_dataset("maiurilorenzo/divina-commedia")
+    # dataset_en = load_dataset("giambono/commedia_en")
+    #
+    # # Display the first few entries
+    # df = dataset["train"].to_pandas()
+    # df_en = dataset_en["train"].to_pandas()
+    #
+    # cantica_id = 3
+    # canto = 31
+    # start_verse = 130
+    # end_verse = 132
+    #
+    # out = fetch_cumulative_indices(cantica_id, canto, start_verse, end_verse)
+    # print(out)
+    #
+    # data = fetch_cantica_data(cantica_id, canto, start_verse, end_verse)
+    # print(data.text)
+    #
+    # print(df.iloc[out])
+
+    # text = retrieve_text(["dante", "musa"], "TEXT", 1, 1, 4, 6)
+
+    # print(text)
+
+    params = {'cantica_id': 1, 'canto': 28, 'end_verse': 142, 'start_verse': 142}
+    result_df = fetch_cantica_data(**params)
+    result_df2 = retrieve_text(**{**params, **{"author_names": "dante", "type_name": "TEXT"}})
+
+    print()
