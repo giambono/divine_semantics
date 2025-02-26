@@ -17,7 +17,7 @@ from qdrant_client.models import PointStruct
 
 from src.compute_embeddings import compute_embeddings_and_upsert
 from src.db_helper import get_db_connection
-from src.experiment import load_model
+from src.utils import load_model
 
 
 if __name__ == "__main__":
