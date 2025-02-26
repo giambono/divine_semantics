@@ -1,0 +1,13 @@
+numpy
+pandas
+sentence-transformers
+pyyaml
+scikit-learn
+scikit-optimize
+mysql-connector-python
+python-dotenv
+qdrant-client
+datasets
+pytest
+jupyterlab
+python-dotenv
