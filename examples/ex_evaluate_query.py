@@ -1,84 +1,17 @@
-import os
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Filter, FieldCondition, MatchAny
-from typing import Any, Union, List
 
+from src.query import evaluate_query
 from src.utils import load_model
-import config
-
 
 load_dotenv()
 
-
-def evaluate_query(
-        client: Any,
-        collection_name: str,
-        query_text: str,
-        expected_index: int,
-        model: Any,
-        author_ids: Union[int, List[int]],
-        type_ids: Union[int, List[int]]
-) -> bool:
-    """
-    Evaluate a text query against a Qdrant collection and check for the presence of an expected index.
-
-    This function encodes the provided query text using the given model, constructs a search filter
-    using the provided author and type IDs, and then performs a search in the specified Qdrant collection.
-    It checks if the expected index is present in the 'cumulative_indices' field of the top search hit.
-
-    Args:
-        client: The Qdrant client used to execute the search.
-        collection_name (str): The name of the collection in Qdrant.
-        query_text (str): The query text to be encoded and searched.
-        expected_index (int): The index to look for in the top hit's 'cumulative_indices'.
-        model: A model instance with an 'encode' method to generate a query embedding.
-        author_ids (int or list): A single author ID or a list of author IDs used for filtering the search.
-        type_ids (int or list): A single type ID or a list of type IDs used for filtering the search.
-
-    Returns:
-        bool: True if the expected_index is found in the 'cumulative_indices' of the top search result;
-              False if no matching verse is found or the expected_index is not present.
-    """
-
-    author_ids = [author_ids] if isinstance(author_ids, int) else author_ids
-    type_ids = [type_ids] if isinstance(type_ids, int) else type_ids
-
-    # Compute the query embedding from your query_text
-    query_embedding = model.encode(query_text)
-
-    model_identifier = model.model_card_data.base_model
-    model_payload_key = next((k for k, v in config.MODELS.items() if v == model_identifier), None)
-    if model_payload_key is None:
-        raise ValueError(f"model {model_identifier} is not in collection {collection_name}")
-
-    search_filter = Filter(
-        must=[
-            FieldCondition(key="type_id", match=MatchAny(any=type_ids)),
-            FieldCondition(key="author_id", match=MatchAny(any=author_ids)),
-            FieldCondition(key="model", match=MatchAny(any=[model_payload_key]))
-        ]
-    )
-
-    # Perform the search in Qdrant
-    hits = client.search(
-        collection_name=collection_name,
-        query_vector=query_embedding,
-        limit=1,  # we only care about the top match
-        query_filter=search_filter
-    )
-
-    if hits:
-        # check if the expected index is included in tercet's cumulative indices
-        top_hit = hits[0]
-        return expected_index in top_hit.payload['cumulative_indices']
-
-    else:
-        print("No matching verses found.")
-        return False
-
-
 if __name__ == "__main__":
+    import os
+    import pandas as pd
+
+    import config
+
     qdrant_url = os.getenv("QDRANT_URL")
     qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
@@ -88,14 +21,34 @@ if __name__ == "__main__":
     )
 
     collection_name = "dante_multilingual_e5"
-    # collection = qdrant_client.get_collection(collection_name)
 
     model_key = "multilingual_e5"
     model = load_model(model_key)
 
-    query_text = "I found me in the wood"
-    expected_index = 0
-    out = evaluate_query(qdrant_client, collection_name, query_text, expected_index, model, author_ids=[1, 2, 3, 4, 5],
-                   type_ids=1)
+    path = os.path.join(config.ROOT, "data/paraphrased_verses.parquet")
+    test_queries = pd.read_parquet(path)
 
-    print(out)
+    N = 2
+    test_queries_sample = test_queries.sample(n=N)[["transformed_text", "expected_index"]]
+
+    # Iterate over the sampled rows and collect the evaluation output
+    out_collect = []
+    for _, row in test_queries_sample.iterrows():
+        query_text = row["transformed_text"]
+        expected_index = row["expected_index"]
+        result = evaluate_query(
+            qdrant_client,
+            collection_name,
+            query_text,
+            expected_index,
+            model,
+            author_ids=[1, 2, 3, 4, 5],
+            type_ids=1
+        )
+        out_collect.append([query_text, result])
+
+    # Calculate performance based on the count of True results
+    true_count = sum(flag for _, flag in out_collect)
+    performance = true_count / len(out_collect)
+
+    print(f"True count: {performance * 100:.2f}%")
