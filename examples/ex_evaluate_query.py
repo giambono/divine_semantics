@@ -31,6 +31,7 @@ if __name__ == "__main__":
     collection_name = "dante_multilingual_e5_optim_weights"
     model = load_model("multilingual_e5")
     model_payload_key = "weighted_embedding_multilingual_e5"
+    author_ids = None
     out_collect, performance = run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids,
                                               test_queries_sample, model_payload_key)
 

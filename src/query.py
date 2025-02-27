@@ -12,8 +12,8 @@ def evaluate_query(
         query_text: str,
         expected_index: int,
         model: Any,
-        author_ids: Union[int, List[int]],
-        type_ids: Union[int, List[int]],
+        author_ids: Union[int, List[int]]=None,
+        type_ids: Union[int, List[int]] = 1,
         model_payload_key: str = None
 ) -> bool:
     """
@@ -49,13 +49,17 @@ def evaluate_query(
     if model_payload_key is None:
         raise ValueError(f"model {model_identifier} is not in collection {collection_name}")
 
-    search_filter = Filter(
-        must=[
-            FieldCondition(key="type_id", match=MatchAny(any=type_ids)),
-            FieldCondition(key="author_id", match=MatchAny(any=author_ids)),
-            FieldCondition(key="model", match=MatchAny(any=[model_payload_key]))
-        ]
-    )
+    # Build the base conditions that always apply.
+    must_conditions = [
+        FieldCondition(key="type_id", match=MatchAny(any=type_ids)),
+        FieldCondition(key="model", match=MatchAny(any=[model_payload_key]))
+    ]
+
+    # Only add the author filter if author_id is not None.
+    if author_ids is not None:
+        must_conditions.insert(1, FieldCondition(key="author_id", match=MatchAny(any=author_ids)))
+
+    search_filter = Filter(must=must_conditions)
 
     # Perform the search in Qdrant
     hits = client.search(
