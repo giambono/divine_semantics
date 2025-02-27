@@ -28,11 +28,11 @@ if __name__ == "__main__":
     qdrant_api_key = os.getenv("QDRANT_API_KEY")
     qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
 
-    collection_name = "dante_multilingual_e5"
+    collection_name = "dante_multilingual_e5_optim_weights"
     model = load_model("multilingual_e5")
-
+    model_payload_key = "weighted_embedding_multilingual_e5"
     out_collect, performance = run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids,
-                                              test_queries_sample)
+                                              test_queries_sample, model_payload_key)
 
     out_collect_df = pd.DataFrame(out_collect, columns=["query_text", "is_correct"])
     out_collect_df.to_csv("output.csv", index=False)

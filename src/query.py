@@ -13,7 +13,8 @@ def evaluate_query(
         expected_index: int,
         model: Any,
         author_ids: Union[int, List[int]],
-        type_ids: Union[int, List[int]]
+        type_ids: Union[int, List[int]],
+        model_payload_key: str = None
 ) -> bool:
     """
     Evaluate a text query against a Qdrant collection and check for the presence of an expected index.
@@ -43,7 +44,8 @@ def evaluate_query(
     query_embedding = model.encode(query_text)
 
     model_identifier = model.model_card_data.base_model
-    model_payload_key = next((k for k, v in config.MODELS.items() if v == model_identifier), None)
+    if model_payload_key is None:
+        model_payload_key = next((k for k, v in config.MODELS.items() if v == model_identifier), None)
     if model_payload_key is None:
         raise ValueError(f"model {model_identifier} is not in collection {collection_name}")
 
@@ -73,19 +75,19 @@ def evaluate_query(
         return False
 
 
-def process_query(row, client, collection_name, model, author_ids, type_ids):
+def process_query(row, client, collection_name, model, author_ids, type_ids, model_payload_key):
     query_text = row["transformed_text"]
     expected_index = row["expected_index"]
-    result = evaluate_query(client, collection_name, query_text, expected_index, model, author_ids, type_ids)
+    result = evaluate_query(client, collection_name, query_text, expected_index, model, author_ids, type_ids, model_payload_key)
     return query_text, result
 
 
-def run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids, test_queries):
+def run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids, test_queries, model_payload_key):
 
     # Use a ThreadPoolExecutor for concurrent evaluation of queries (I/O-bound)
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [
-            executor.submit(process_query, row, qdrant_client, collection_name, model, author_ids, type_ids)
+            executor.submit(process_query, row, qdrant_client, collection_name, model, author_ids, type_ids, model_payload_key)
             for _, row in test_queries.iterrows()
         ]
         out_collect = [future.result() for future in concurrent.futures.as_completed(futures)]
