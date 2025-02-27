@@ -1,14 +1,5 @@
 """
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.n_H2-Mn_tP4xlhhh5-tVN2PQLictMcv-izNxIBsOJgQ
 
-from qdrant_client import QdrantClient
-
-qdrant_client = QdrantClient(
-    url="https://5396fea8-cac7-4233-8bb3-d9800bac734c.us-east4-0.gcp.cloud.qdrant.io:6333",
-    api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.n_H2-Mn_tP4xlhhh5-tVN2PQLictMcv-izNxIBsOJgQ",
-)
-
-print(qdrant_client.get_collections())
 """
 import ast
 import numpy as np
