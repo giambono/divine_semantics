@@ -165,7 +165,7 @@ def weighted_avg_embedding_qdrant(
         groups[group_key]["embeddings"].append(np.array(point.vector))
         groups[group_key]["weights"].append(weight)
         groups[group_key]["author_ids"].append(author_id)
-        groups[group_key]["cumulative_indices"].append(payload.get("cumulative_indices"))
+        groups[group_key]["cumulative_indices"] = payload.get("cumulative_indices")
 
     # Compute weighted average embedding per group
     results = []
