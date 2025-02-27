@@ -1,73 +1,91 @@
-import numpy as np
+import os
 import pandas as pd
-import yaml
-from sentence_transformers import SentenceTransformer
+import numpy as np
+from dotenv import load_dotenv
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
 from skopt import gp_minimize
 from skopt.space import Real
 from skopt.utils import use_named_args
-from sklearn.metrics.pairwise import cosine_similarity
-
 import config
-from src.compute import weighted_avg_embedding
-from src.db_helper import get_db_connection
-from src.performance import evaluate_performance
 
-author_name_ids = {"dante": 1, "singleton": 2, "musa": 3, "kirkpatrick": 4, "durling": 5}
+from src.query import evaluate_query, process_query, run_evaluation
+from src.compute_embeddings import weighted_avg_embedding_qdrant
+from src.utils import load_model
+
+# ----------------- Setup Functions ----------------- #
 
 
-def optimize_weights(df, columns, models, test_queries):
+def get_search_space(columns=["musa", "kirkpatrick", "durling"]):
     """
-    Bayesian Optimization for best embedding weights using cosine similarity.
+    Returns the search space for the embedding weights.
+
+    Args:
+        columns: list of keys for which weights will be optimized.
     """
+    return [Real(0.0, 1.0, name=col) for col in columns]
 
-    # Define weight search space (each weight between 0 and 1)
-    space = [Real(0.0, 1.0, name=col) for col in columns]
+# ----------------- Optimization Functions ----------------- #
 
+def create_loss_function(space, qdrant_client, collection_name, model, embedding_dim,
+                         author_name_ids, author_ids, type_ids, test_queries, model_name):
+    """
+    Create and return the loss function for Bayesian optimization.
+
+    The loss function:
+        1. Normalizes the input weights.
+        2. Computes the weighted average embeddings from Qdrant.
+        3. Evaluates performance on test queries.
+        4. Returns the negative performance.
+    """
     @use_named_args(space)
     def loss(**weights):
-        # Normalize weights to sum to 1
+        # Normalize weights so they sum to 1.
         total_weight = sum(weights.values())
         normalized_weights = {author_name_ids[key]: val / total_weight for key, val in weights.items()}
+        print("Normalized weights:", normalized_weights)
 
-        # Compute average embeddings
-        model_key = list(models.keys())[0]
-        df_embeddings = weighted_avg_embedding(model_key, df.copy(), normalized_weights)
-        df_embeddings.set_index(["cantica_id", "canto", "start_verse", "end_verse"], inplace=True)
+        # Create a weighted collection name.
+        collection_name_weighted = f"{collection_name}_weighted"
+        qdrant_client.create_collection(
+            collection_name=collection_name_weighted,
+            vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
+        )
 
-        # Evaluate performance using cosine similarity
-        _, performance_results, correct_queries, incorrect_queries = evaluate_performance(df_embeddings, models, test_queries)
+        # Compute weighted average embeddings.
+        df_embeddings = weighted_avg_embedding_qdrant(
+            model_name=model_name,
+            collection_name=collection_name,
+            qdrant_client=qdrant_client,
+            author_weights=normalized_weights,
+            store_in_qdrant=True,
+            collection_name_weighted=collection_name_weighted
+        )
 
-        # Get the average accuracy across models
-        avg_accuracy = np.mean([np.mean(list(performance.values())) for performance in performance_results.values()])
-        # print(f"Iteration Incorrect Queries: {incorrect_queries}")
+        # Evaluate performance using the provided evaluation function.
+        _, performance = run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids, test_queries)
 
-        return -avg_accuracy  # We minimize the negative accuracy to maximize accuracy
+        # Clean up the temporary weighted collection.
+        qdrant_client.delete_collection(collection_name=collection_name_weighted)
 
-    # Run Bayesian Optimization
+        print(f"Normalized weights: {normalized_weights}, Performance: {performance}")
+        # Return negative performance for minimization.
+        return -performance
+
+    return loss
+
+def optimize_embedding_weights(loss, space, columns=["musa", "kirkpatrick", "durling"]):
+    """
+    Run Bayesian optimization and return the best embedding weights.
+
+    Args:
+        loss: the loss function to minimize.
+        space: the search space for optimization.
+        columns: list of keys corresponding to the weights.
+    """
     result = gp_minimize(loss, space, n_calls=15, random_state=42)
-
-    # Convert optimized weights to a dictionary
     best_weights = {columns[i]: result.x[i] for i in range(len(columns))}
-
     return best_weights
 
+# ----------------- Main Function ----------------- #
 
-if __name__ == "__main__":
-
-    path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/experiments/embeddings/multilingual_e5/embeddings.parquet"
-    df = pd.read_parquet(path)
-    df = df[(df["cantica_id"]==1) & (df["type_id"]==1) & (df["author_id"]!=1)]  # excluding dante
-    # df = df[(df["cantica_id"]==1) & (df["type_id"]==1)]  # only type = text
-
-    path = r"/home/rfflpllcn/IdeaProjects/divine_semantics/data/paraphrased_verses.parquet"
-    test_queries = pd.read_parquet(path)
-    # test_queries = test_queries.iloc[:10]
-
-    test_queries = test_queries[["transformed_text", "expected_index"]]
-    test_queries = dict(zip(test_queries.iloc[:, 0], test_queries.iloc[:, 1]))
-
-    models={"multilingual_e5": SentenceTransformer("intfloat/multilingual-e5-large")}
-
-    best_weights = optimize_weights(df, ["musa", "kirkpatrick", "durling"], models, test_queries)
-
-    print("Best Weights Found:", best_weights)

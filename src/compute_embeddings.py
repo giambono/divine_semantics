@@ -80,7 +80,8 @@ def weighted_avg_embedding_qdrant(
         batch_size=1000,
         type_id=1,
         store_in_qdrant=False,
-        upsert_batch_size=500
+        upsert_batch_size=500,
+        collection_name_weighted=None
 ):
     """
     Compute the weighted average embedding per verse segment from a Qdrant collection
@@ -100,6 +101,8 @@ def weighted_avg_embedding_qdrant(
     - A Pandas DataFrame with columns:
       ['cantica_id', 'canto', 'start_verse', 'end_verse', f'weighted_embedding_{model_name}']
     """
+
+    collection_name_weighted = f"{collection_name}_weighted" if collection_name_weighted is None else collection_name_weighted
     # Serialize global author weights for consistency
     sorted_author_weights = json.dumps(dict(sorted(author_weights.items())))
 
@@ -205,7 +208,7 @@ def weighted_avg_embedding_qdrant(
         # Perform batched upserts to prevent timeout issues
         if store_in_qdrant and len(upsert_points) >= upsert_batch_size:
             qdrant_client.upsert(
-                collection_name=collection_name,
+                collection_name=collection_name_weighted,
                 points=upsert_points
             )
             upsert_points.clear()  # Clear batch after upserting
@@ -213,7 +216,7 @@ def weighted_avg_embedding_qdrant(
     # Final upsert for any remaining points
     if store_in_qdrant and upsert_points:
         qdrant_client.upsert(
-            collection_name=collection_name,
+            collection_name=collection_name_weighted,
             points=upsert_points
         )
 
