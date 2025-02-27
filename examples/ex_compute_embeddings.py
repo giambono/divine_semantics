@@ -10,6 +10,7 @@ qdrant_client = QdrantClient(
 
 print(qdrant_client.get_collections())
 """
+import ast
 import numpy as np
 import pandas as pd
 from qdrant_client import QdrantClient
@@ -25,6 +26,19 @@ if __name__ == "__main__":
     # Get the SQLite connection and fetch the data
     conn = get_db_connection()  # Ensure get_db_connection() is defined/imported
     df = pd.read_sql_query("SELECT * FROM divine_comedy", conn)  #.iloc[:5]
+    verse_mappings = pd.read_sql_query("SELECT * FROM verse_mappings", conn)
+
+    # Merge the cumulative_indices column from verse_mappings into df
+    df = df.merge(
+        verse_mappings[['cantica_id', 'canto', 'start_verse', 'end_verse', 'cumulative_indices']],
+        on=['cantica_id', 'canto', 'start_verse', 'end_verse'],
+        how='left'
+    )
+
+    # Convert the string to a list
+    df['cumulative_indices'] = df['cumulative_indices'].apply(
+        lambda x: ast.literal_eval(x) if pd.notnull(x) else []
+    )
 
     qdrant_client = QdrantClient(url="http://localhost:6333")
 
