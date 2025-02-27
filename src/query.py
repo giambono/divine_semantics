@@ -1,5 +1,6 @@
-from typing import Any, Union, List
 
+import concurrent.futures
+from typing import Any, Union, List
 from qdrant_client.http.models import Filter, FieldCondition, MatchAny
 
 import config
@@ -70,3 +71,27 @@ def evaluate_query(
     else:
         print("No matching verses found.")
         return False
+
+
+def process_query(row, client, collection_name, model, author_ids, type_ids):
+    query_text = row["transformed_text"]
+    expected_index = row["expected_index"]
+    result = evaluate_query(client, collection_name, query_text, expected_index, model, author_ids, type_ids)
+    return query_text, result
+
+
+def run_evaluation(qdrant_client, collection_name, model, author_ids, type_ids, test_queries):
+
+    # Use a ThreadPoolExecutor for concurrent evaluation of queries (I/O-bound)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_query, row, qdrant_client, collection_name, model, author_ids, type_ids)
+            for _, row in test_queries.iterrows()
+        ]
+        out_collect = [future.result() for future in concurrent.futures.as_completed(futures)]
+
+    # Calculate performance
+    true_count = sum(flag for _, flag in out_collect)
+    performance = true_count / len(out_collect)
+
+    return out_collect, performance
