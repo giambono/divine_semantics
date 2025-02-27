@@ -161,10 +161,11 @@ def weighted_avg_embedding_qdrant(
 
         group_key = (cantica_id, canto, start_verse, end_verse)
         if group_key not in groups:
-            groups[group_key] = {"embeddings": [], "weights": [], "author_ids": []}
+            groups[group_key] = {"embeddings": [], "weights": [], "author_ids": [], "cumulative_indices": []}
         groups[group_key]["embeddings"].append(np.array(point.vector))
         groups[group_key]["weights"].append(weight)
         groups[group_key]["author_ids"].append(author_id)
+        groups[group_key]["cumulative_indices"].append(payload.get("cumulative_indices"))
 
     # Compute weighted average embedding per group
     results = []
@@ -187,7 +188,8 @@ def weighted_avg_embedding_qdrant(
             "applied_weights": data["weights"],
             "applied_author_ids": data["author_ids"],
             # Also store the global author weights used to compute these embeddings
-            "applied_author_weights": sorted_author_weights
+            "applied_author_weights": sorted_author_weights,
+            "cumulative_indices": data["cumulative_indices"]
         }
 
         results.append({**point_payload, weighted_avg_model_name: weighted_avg})

@@ -6,8 +6,9 @@ from src.utils import load_model
 
 if __name__ == "__main__":
 
-    collection_name = "dante_multilingual_e5"
-    model_name = "multilingual_e5"
+    # collection_name = "dante_multilingual_e5"
+    collection_name = "dante_fake_text"
+    model_name = "fake_text"
     model = load_model(model_name)
 
     qdrant_client = QdrantClient(url="http://localhost:6333")
