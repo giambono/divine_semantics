@@ -5,7 +5,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 def process_verses(df, text_column='text', volume_column='volume', canto_column='canto',
-                   tercet_column='tercet', verse_number_column='verse_number'):
+                   tercet_column='tercet', verse_number_column='verse_number', num_return_sequences=5):
     """
     Processes each verse from the input DataFrame, generating five paraphrased versions for each verse
     using a transformer model and storing them in a new DataFrame along with the original metadata.
@@ -41,7 +41,7 @@ def process_verses(df, text_column='text', volume_column='volume', canto_column=
             top_k=200,
             top_p=0.95,
             early_stopping=True,
-            num_return_sequences=5
+            num_return_sequences=num_return_sequences
         )
 
         paraphrased_texts = [tokenizer.decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=True) for output in outputs]
@@ -62,6 +62,8 @@ def process_verses(df, text_column='text', volume_column='volume', canto_column=
 # dataset = load_dataset("maiurilorenzo/divina-commedia")
 dataset = load_dataset("giambono/commedia_en")
 
-df = dataset["train"].to_pandas()
+df = dataset["train"].to_pandas().iloc[:10]
 
-result_df = process_verses(df)
+result_df = process_verses(df, num_return_sequences=1)
+result_df.to_csv("../data/paraphrases.csv", index=False)
+print(result_df.transformed_text)
