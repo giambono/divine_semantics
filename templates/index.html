@@ -1,13 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Query Dante Verse</title>
+    <style>
+        /* Your existing styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 20px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #444;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        input[type="submit"] {
+            padding: 10px;
+            background: #337ab7;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        input[type="submit"]:hover {
+            background: #286090;
+        }
+        .settings-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        a {
+            color: #337ab7;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-<h2>Enter your query</h2>
-<form action="/query" method="get">
-    <input type="text" name="text" placeholder="Type your query here">
-    <input type="submit" value="Submit">
-</form>
+<div class="container">
+    <h2>Enter Your Query</h2>
+    <form action="/query" method="get">
+        <input type="text" name="text" placeholder="Type your query here" required>
+        <input type="submit" value="Submit">
+    </form>
+    <div class="settings-link">
+        <a href="/settings">Settings</a>
+    </div>
+</div>
 </body>
 </html>

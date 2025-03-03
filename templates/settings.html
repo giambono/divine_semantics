@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eef;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    h2 {
+      text-align: center;
+      color: #444;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    input[type="number"],
+    input[type="submit"] {
+      padding: 10px;
+      font-size: 1em;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    input[type="submit"] {
+      background: #337ab7;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background: #286090;
+    }
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+    a {
+      text-decoration: none;
+      color: #337ab7;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Settings</h2>
+  <form action="/settings" method="post">
+    <label for="limit">Results Limit:</label>
+    <input type="number" id="limit" name="limit" value="{{ limit }}" min="1" required>
+    <input type="submit" value="Save">
+  </form>
+  <div class="back-link">
+    <a href="/">← Back to Query</a>
+  </div>
+</div>
+</body>
+</html>

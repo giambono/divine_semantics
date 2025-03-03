@@ -63,6 +63,7 @@
     <p class="error">{{ error }}</p>
     {% elif result is mapping %}
     <div class="result">
+        <p><strong>Score:</strong> {{ result.score }}</p>
         <p><strong>Cantica:</strong> {{ result.cantica }}</p>
         <p><strong>Canto:</strong> {{ result.canto }}</p>
         <p><strong>Verse Number:</strong> {{ result.verse_number }}</p>
@@ -76,6 +77,7 @@
     {% else %}
     {% for r in result %}
     <div class="result">
+        <p><strong>Score:</strong> {{ r.score }}</p>
         <p><strong>Cantica:</strong> {{ r.cantica }}</p>
         <p><strong>Canto:</strong> {{ r.canto }}</p>
         <p><strong>Verse Number:</strong> {{ r.verse_number }}</p>
