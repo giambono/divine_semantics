@@ -8,17 +8,19 @@ from qdrant_client.models import PointStruct
 from qdrant_client.models import Distance, VectorParams
 
 
-def compute_embeddings_and_upsert(df, models, qdrant_client, collection_name_prefix="dante_"):
+def compute_embeddings_and_upsert(df, models, qdrant_client, collection_name_prefix="dante_", text_column="text", payload_columns=None):
     """
-    Computes embeddings using different models for data stored in the SQLite database,
+    Computes embeddings using different models for data stored in the DataFrame,
     and upserts the computed embeddings directly into Qdrant collections.
 
     Parameters:
+    - df (pandas.DataFrame): DataFrame containing the data.
     - models (dict): Dictionary where keys are model names and values are the model instances.
     - qdrant_client (QdrantClient): An instance of QdrantClient.
     - collection_name_prefix (str): Prefix for Qdrant collection names.
-
-    The function fetches all rows from the "divine_comedy" table.
+    - text_column (str): The name of the column in df to be embedded.
+    - payload_columns (list, optional): List of column names from df to include in the payload.
+      If None, all columns except text_column and the embedding field will be included.
     """
 
     existing_collections = [c.name for c in qdrant_client.get_collections().collections]
@@ -30,8 +32,8 @@ def compute_embeddings_and_upsert(df, models, qdrant_client, collection_name_pre
         sample_embedding = model.encode("test")
         embedding_dim = len(sample_embedding)
 
-        # Compute embeddings for each row's 'text' column
-        df[f"embedding_{model_name}"] = df["text"].apply(
+        # Compute embeddings for each row's text_column
+        df[f"embedding_{model_name}"] = df[text_column].apply(
             lambda text: model.encode(text) if pd.notnull(text)
             else np.zeros(model.get_sentence_embedding_dimension())
         )
@@ -40,7 +42,6 @@ def compute_embeddings_and_upsert(df, models, qdrant_client, collection_name_pre
         collection_name = f"{collection_name_prefix}{model_name}"
 
         if collection_name in existing_collections:
-            # raise Exception(f"Collection {collection_name} already exists.")
             print(f"Collection {collection_name} already exists. Skipping {model_name}.")
             continue
 
@@ -53,8 +54,12 @@ def compute_embeddings_and_upsert(df, models, qdrant_client, collection_name_pre
         for idx, row in df.iterrows():
             vector = row[f"embedding_{model_name}"]
 
-            # Prepare payload with all other fields (dropping the embedding field)
-            payload = row.drop(labels=[f"embedding_{model_name}", "text"]).to_dict()
+            if payload_columns is not None:
+                payload = row[payload_columns].to_dict()
+            else:
+                # Prepare payload with all other fields (dropping the embedding field and text_column)
+                payload = row.drop(labels=[f"embedding_{model_name}", text_column]).to_dict()
+
             # Add new field "model" to the payload
             payload["model"] = model_name
 
