@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Query Result</title>
+</head>
+<body>
+<h2>Query Result</h2>
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% else %}
+<p><strong>Cantica:</strong> {{ result.cantica }}</p>
+<p><strong>Canto:</strong> {{ result.canto }}</p>
+<p><strong>Verse Number:</strong> {{ result.verse_number }}</p>
+<p><strong>Verse:</strong> {{ result.verse }}</p>
+<p><strong>User Query:</strong> {{ result.user_query }}</p>
+<p>
+    <strong>Reader Link:</strong>
+    <a href="{{ result.reader_link }}" target="_blank">View in Dartmouth Reader</a>
+</p>
+{% endif %}
+<p><a href="/">Back to Query</a></p>
+</body>
+</html>
