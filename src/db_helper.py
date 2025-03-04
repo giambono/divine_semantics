@@ -264,9 +264,10 @@ if __name__ == "__main__":
 
     # print(text)
 
-    params = {'cantica': 1, 'canto': 28, 'end_verse': 142, 'start_verse': 120}
-    result_df = fetch_cantica_data(**params)
-    # result_df2 = retrieve_text(**{**params, **{"author_names": "dante", "type_name": "TEXT"}})
-    result_df2 = retrieve_text(**{**params, **{"author_names": ["dante", "musa"], "type_name": "TEXT"}})
+    params = {'cantica': 1, 'canto': 1, 'start_verse': 1, 'end_verse': 200}
+    _, d_list = retrieve_text(**{**params, **{"author_names": ["dante"], "type_name": "TEXT"}})
 
-    print()
+    for d in d_list:
+        # {'author_id': 1, 'author_name': 'dante', 'cantica_id': 1, 'cantica_name': 'Inferno', 'canto': 1, 'd_end_verse': 3, 'd_start_verse': 1, 'text': 'Nel mezzo del cammin di nostra vita mi ritrovai per una selva oscura, ché la diritta via era smarrita.'}
+        {"cantica": d["cantica_name"], "canto": d["canto"], "start_verse": d["d_start_verse"], "end_verse": d["d_end_verse"], "tercet": d["text"]}
+    print(df)

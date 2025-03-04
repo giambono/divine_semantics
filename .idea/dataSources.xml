@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="divine_comedy.db" uuid="4606d99a-804c-4f75-b18d-43b3592283ba">
+    <data-source source="LOCAL" name="divine_comedy.db" uuid="07a8d1e2-4eb6-4e6d-b7dc-ff4e72f896b8">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/database/divine_comedy.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/../divine_semantics_db/divine_semantics_db/database/divine_comedy.db</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
       </jdbc-additional-properties>

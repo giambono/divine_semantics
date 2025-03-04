@@ -18,7 +18,8 @@ EXPERIMENTS_ROOT = os.path.join(ROOT, "experiments")
 os.makedirs(EXPERIMENTS_ROOT, exist_ok=True)
 
 # SQLite Config
-SQLITE_DB_PATH = os.path.join(ROOT, "database", "divine_comedy.db")
+# SQLITE_DB_PATH = os.path.join(ROOT, "database", "divine_comedy.db")
+SQLITE_DB_PATH = r"/home/rfflpllcn/IdeaProjects/divine_semantics_db/divine_semantics_db/database/divine_comedy.db"
 
 # #######################################################
 # NLP SETTINGS
