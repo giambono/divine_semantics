@@ -17,7 +17,7 @@ import json
 from src.fake import simulated_openai_create
 
 
-def extract_graph_from_tercet(cantica, canto, start_verse, end_verse, tercet, simulate=False, model="gpt-3.5-turbo"):
+def extract_graph_from_tercet(sprompt, simulate=False, model="gpt-3.5-turbo"):
     prompt = f"""
 Sei un esperto di analisi narrativa e di parsing semantico. Il tuo compito è convertire le terzine tratte dalla Divina Commedia di Dante in un grafo strutturato. Per ciascuna terzina, estrai le seguenti informazioni:
 
@@ -51,16 +51,22 @@ Sei un esperto di analisi narrativa e di parsing semantico. Il tuo compito è co
 ---
 
 ## Dati in ingresso
-Cantica: {cantica}
-Canto: {canto}
-Versi: {start_verse}-{end_verse}
-Terzina: {tercet}
+
+Una stringa di dati organizzati in blocchi, dove ciascun blocco descrive una terzina. Ciascun blocco è separato da una newline (a capo).
+Ogni blocco contiene:
+
+    - cantica: Il nome della cantica ("Inferno").
+    - canto: Il numero del canto ("1").
+    - start_verse, end_verse: I numeri di inizio e fine verso che identificano la posizione della terzina all’interno del canto.
+    - tercet: Il testo vero e proprio della terzina.
+    - comment_text (opzionale): Commento critico
+    - start_verse_comment, end_verse_comment (opzionali): I numeri di inizio e fine verso che identificano la posizione dei versi a cui comment_text si riferisce.
 
 ---
 
 ## Formato di output
 {{
-    "tercet": "{tercet}",
+    "tercet": "{{<tercet>}}",
     "nodes": [{{<ogni nodo estratto>}}],
     "relationships": [{{<ogni relazione estratta>}}]
 }}
@@ -89,11 +95,8 @@ Esempio di relazione:
 
 ---
 
-Ora elabora la seguente terzina:
-Cantica: {cantica}
-Canto: {canto}
-Versi: {start_verse}-{end_verse}
-Terzina: {tercet}
+Ora elabora le seguenti terzine:
+{sprompt}
 
 Restituisci esclusivamente l'oggetto JSON, senza spiegazioni o commenti.
 """
@@ -133,10 +136,13 @@ if __name__ == "__main__":
     params = {'cantica': 1, 'canto': 1, 'start_verse': 1, 'end_verse': 200}
     _, d_list = retrieve_text(**{**params, **{"author_names": ["dante"], "type_name": "TEXT"}})
 
-    # for d in d_list:
-    for d in d_list[:3]:
-        _params = {"cantica": d["cantica_name"], "canto": d["canto"], "start_verse": d["d_start_verse"], "end_verse": d["d_end_verse"], "tercet": d["text"]}
-
-        graph = extract_graph_from_tercet(**_params, simulate=simulate)
-        print(graph)
-
+    sprompt = "\n".join([f"cantica: {d['cantica_name']}, canto: {d['canto']}, start_verse: {d['d_start_verse']}, end_verse: {d['d_end_verse']}, tercet: {d['text']}" for d in d_list])
+    graph = extract_graph_from_tercet(sprompt, simulate=simulate)
+    print(graph)
+    # # for d in d_list:
+    # for d in d_list[:3]:
+    #     _params = {"cantica": d["cantica_name"], "canto": d["canto"], "start_verse": d["d_start_verse"], "end_verse": d["d_end_verse"], "tercet": d["text"]}
+    #
+    #     graph = extract_graph_from_tercet(**_params, simulate=simulate)
+    #     print(graph)
+    #

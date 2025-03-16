@@ -135,7 +135,7 @@ def fetch_cantica_data(cantica=None, canto=None, start_verse=None, end_verse=Non
 
     # Base query
     query = """
-    SELECT dc.text
+    SELECT dc.cantica_id, dc.canto, dc.start_verse, dc.end_verse, dc.text
     FROM divine_comedy dc
     WHERE 1=1
     """
@@ -264,7 +264,7 @@ if __name__ == "__main__":
 
     # print(text)
 
-    params = {'cantica': 1, 'canto': 1, 'start_verse': 1, 'end_verse': 200}
+    params = {'cantica': 1, 'canto': 10, 'start_verse': 1, 'end_verse': 200}
     _, d_list = retrieve_text(**{**params, **{"author_names": ["dante"], "type_name": "TEXT"}})
 
     for d in d_list:
